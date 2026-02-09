@@ -6,6 +6,9 @@ const resultContainer = document.getElementById('result');
 const uploadInput = document.getElementById('json-upload');
 const roomsUploadInput = document.getElementById('rooms-upload');
 const roomsHint = document.getElementById('rooms-hint');
+const roomsManualInput = document.getElementById('rooms-manual');
+const roomsApplyButton = document.getElementById('rooms-apply');
+const roomsClearButton = document.getElementById('rooms-clear');
 const availableRooms = [];
 const rawApiBase = window.API_BASE || '';
 const apiBase = rawApiBase.replace(/\/$/, '');
@@ -128,6 +131,13 @@ const normalizeRooms = (data) => {
     .filter((value) => value.length > 0);
 };
 
+const normalizeRoomList = (rawValue) => {
+  return rawValue
+    .split(',')
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
+};
+
 roomsUploadInput.addEventListener('change', async (event) => {
   const file = event.target.files[0];
   if (!file) {
@@ -152,6 +162,24 @@ roomsUploadInput.addEventListener('change', async (event) => {
     alert('Kunne ikke lese JSON-filen for ledige rom.');
     roomsUploadInput.value = '';
   }
+});
+
+roomsApplyButton.addEventListener('click', () => {
+  const rawValue = roomsManualInput.value || '';
+  const parsedRooms = normalizeRoomList(rawValue);
+  if (parsedRooms.length === 0) {
+    alert('Legg inn minst ett ledig rom.');
+    return;
+  }
+  availableRooms.length = 0;
+  availableRooms.push(...parsedRooms);
+  renderAvailableRooms();
+});
+
+roomsClearButton.addEventListener('click', () => {
+  availableRooms.length = 0;
+  roomsManualInput.value = '';
+  renderAvailableRooms();
 });
 
 runButton.addEventListener('click', async () => {

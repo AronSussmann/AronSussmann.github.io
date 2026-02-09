@@ -79,6 +79,14 @@
         Last opp JSON med ledige rom
         <input type="file" id="rooms-upload" accept="application/json" />
       </label>
+      <label>
+        Legg inn ledige rom manuelt (kommaseparert)
+        <input type="text" id="rooms-manual" placeholder="101, 116, 202" />
+      </label>
+      <div class="actions">
+        <button type="button" id="rooms-apply">Oppdater ledige rom</button>
+        <button type="button" id="rooms-clear">Tøm ledige rom</button>
+      </div>
       <pre class="json-sample">["101", "116", "202", "204", "303"]</pre>
       <div class="hint" id="rooms-hint">Ledige rom: ingen lastet inn.</div>
     </section>

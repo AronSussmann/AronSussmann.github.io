@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Romfordeling</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Blindern Studenterhjem</p>
+        <h1>Romfordeling ved inntak</h1>
+        <p class="hint">Registrer s&oslash;kere, last opp ledige rom, og kj&oslash;r fordelingen med ett klikk.</p>
+      </div>
+      <div class="hero-badge">
+        <span>Laget av Aron Suessmann</span>
+        <strong>2026</strong>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2>Registrer s&oslash;ker</h2>
+
+      <form id="applicant-form" class="form">
+        <label>
+          Navn
+          <input type="text" id="name" required />
+        </label>
+        <label>
+          Rom du har i dag
+          <input type="text" id="current-room-number" placeholder="101" required />
+        </label>
+        <label>
+          Romtype du har i dag
+          <select id="current-room" required>
+            <option value="">Velg</option>
+            <option value="Fleksirom">Fleksirom</option>
+            <option value="Parrom">Parrom</option>
+            <option value="Enkeltrom">Enkeltrom</option>
+            <option value="Porten">Porten</option>
+          </select>
+        </label>
+        <label>
+          Ansiennitet (semester eller antall)
+          <input type="number" id="seniority" min="0" step="1" required />
+        </label>
+        <label>
+          Maks 8 &oslash;nsker (kommaseparert, par: "116 KODE")
+          <input type="text" id="preferences" placeholder="101, 203, A12" required />
+        </label>
+        <div class="actions">
+          <button type="submit">Legg til beboer</button>
+        </div>
+      </form>
+      <div class="divider"></div>
+      <label>
+        Last opp JSON med s&oslash;kere
+        <input type="file" id="json-upload" accept="application/json" />
+      </label>
+      <pre class="json-sample">[
+  {
+    "name": "Aron",
+    "currentRoom": "101",
+    "currentRoomType": "Enkeltrom",
+    "seniority": 4,
+    "preferences": ["116 EEAS", "202", "303"]
+  },
+  {
+    "name": "Emma",
+    "currentRoom": "305",
+    "currentRoomType": "Parrom",
+    "seniority": 4,
+    "preferences": ["116 EEAS", "204"]
+  }
+]</pre>
+      <label>
+        Last opp JSON med ledige rom
+        <input type="file" id="rooms-upload" accept="application/json" />
+      </label>
+      <pre class="json-sample">["101", "116", "202", "204", "303"]</pre>
+      <div class="hint" id="rooms-hint">Ledige rom: ingen lastet inn.</div>
+    </section>
+
+    <section class="card">
+      <div class="section-head">
+        <h2>Registrerte s&oslash;kere</h2>
+      </div>
+      <table class="table" id="applicant-table">
+        <thead>
+          <tr>
+            <th>Navn</th>
+            <th>Rom</th>
+            <th>Romtype</th>
+            <th>Ansiennitet</th>
+            <th>&Oslash;nsker</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div class="table-actions">
+        <button id="run-allocation" type="button">Fordel ut rom</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Resultat</h2>
+      <div id="result"></div>
+    </section>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
+

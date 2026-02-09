@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: romfordeling
+    runtime: java
+    plan: free
+    buildCommand: ./gradlew build -x test
+    startCommand: java -jar build/libs/romfordeling-0.0.1-SNAPSHOT.jar

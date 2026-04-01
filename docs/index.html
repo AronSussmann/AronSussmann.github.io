@@ -4,14 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Romfordeling</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=20260401" />
 </head>
 <body>
   <main class="page">
     <header class="hero">
       <div>
         <p class="eyebrow">Blindern Studenterhjem</p>
-        <h1>Romfordeling ved inntak</h1>
+        <h1>Romfordeling</h1>
         <p class="hint">Registrer s&oslash;kere, last opp ledige rom, og kj&oslash;r fordelingen med ett klikk.</p>
       </div>
       <div class="hero-badge">
@@ -80,7 +80,26 @@
         <input type="file" id="rooms-upload" accept="application/json" />
       </label>
       <pre class="json-sample">["101", "116", "202", "204", "303"]</pre>
+      <div class="room-editor">
+        <div class="field-group">
+          <label for="room-input">Legg til ett rom</label>
+          <div class="inline-input">
+            <input type="text" id="room-input" placeholder="f.eks. 116" />
+            <button type="button" id="room-add">Legg til</button>
+          </div>
+        </div>
+        <div class="field-group">
+          <label for="rooms-manual">Legg til flere rom (kommaseparert)</label>
+          <div class="inline-input">
+            <input type="text" id="rooms-manual" placeholder="f.eks. 301, 302, A12" />
+            <button type="button" id="rooms-apply">Legg til flere</button>
+            <button type="button" id="rooms-clear" class="ghost">T&oslash;m romliste</button>
+          </div>
+        </div>
+        <div class="room-list" id="rooms-list"></div>
+      </div>
       <div class="hint" id="rooms-hint">Ledige rom: ingen lastet inn.</div>
+      <div class="hint" id="app-status">Status: venter p&aring; script.</div>
     </section>
 
     <section class="card">
@@ -110,8 +129,7 @@
     </section>
   </main>
 
-  <script src="config.js"></script>
-  <script src="app.js"></script>
+  <script src="config.js?v=20260401"></script>
+  <script src="app.js?v=20260401"></script>
 </body>
 </html>
-

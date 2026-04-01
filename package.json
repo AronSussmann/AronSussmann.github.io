@@ -1,0 +1,15 @@
+{
+  "name": "romfordeling-frontend-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:ui:unit": "vitest run",
+    "test:ui:e2e": "playwright test",
+    "test:ui": "npm run test:ui:unit && npm run test:ui:e2e"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.54.2",
+    "jsdom": "^26.1.0",
+    "vitest": "^2.1.9"
+  }
+}

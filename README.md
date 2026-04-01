@@ -29,3 +29,10 @@ Note: If Render does not support Java 25, change `build.gradle` to Java 21 and r
 ## Local run
 - Backend + frontend together: `gradlew.bat bootRun`
 - Open `http://localhost:8080`
+
+## Tests
+- Backend unit/integration: `gradlew.bat test`
+- Frontend unit + browser integration:
+  1. `npm install`
+  2. `npx playwright install chromium`
+  3. `npm run test:ui`

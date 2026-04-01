@@ -147,6 +147,37 @@ select:focus {
   flex-wrap: wrap;
 }
 
+.room-editor {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.field-group {
+  display: grid;
+  gap: 8px;
+}
+
+.inline-input {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.inline-input input {
+  flex: 1;
+  min-width: 200px;
+}
+
+.ghost {
+  background: transparent;
+  border: 1px solid var(--line);
+}
+
+.ghost:hover {
+  box-shadow: none;
+}
+
 .divider {
   height: 1px;
   background: var(--line);
@@ -233,6 +264,30 @@ button:disabled {
   border: 1px solid rgba(225, 6, 0, 0.2);
 }
 
+.room-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.room-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--card-strong);
+  font-size: 13px;
+}
+
+.room-pill button {
+  padding: 5px 9px;
+  font-size: 11px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 .page > * {
   animation: rise 0.6s ease both;
 }
@@ -281,8 +336,21 @@ button:disabled {
     padding: 18px;
   }
 
+  .inline-input {
+    flex-direction: column;
+  }
+
+  .inline-input input {
+    min-width: 0;
+  }
+
   button {
     width: 100%;
     justify-content: center;
+  }
+
+  .room-pill {
+    width: 100%;
+    justify-content: space-between;
   }
 }

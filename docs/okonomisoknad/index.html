@@ -89,13 +89,32 @@
     .choice-button:focus-visible { outline: 3px solid #f5b700; outline-offset: 3px; }
     .chart-result { min-height: 1.3em; margin: 8px 0 0; color: #aebbb2; font-size: .68rem; }
     .section { padding: 74px clamp(22px, 8vw, 128px); }
+    .game-section { padding: 74px clamp(22px, 8vw, 128px); color: #edf4ef; background: #111e23; }
+    .game-heading { display: flex; align-items: end; justify-content: space-between; gap: 25px; margin-bottom: 25px; }
+    .game-heading h2 { margin: 0; font-family: Georgia, serif; font-size: clamp(2rem, 4vw, 3.5rem); font-weight: 400; letter-spacing: -.055em; }
+    .game-heading p:last-child { max-width: 390px; margin: 0; color: #afbfbb; font-size: .9rem; line-height: 1.7; }
+    .game-shell { position: relative; overflow: hidden; width: 100%; aspect-ratio: 16 / 9; border: 8px solid #263a3d; border-radius: 6px; background: #83aee5; box-shadow: 0 18px 55px rgba(0,0,0,.28); }
+    #kirkenes-game { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+    .game-overlay { position: absolute; inset: 0; display: grid; place-items: center; padding: 18px; background: rgba(7,17,24,.42); }
+    .game-overlay[hidden] { display: none; }
+    .game-overlay-card { width: min(490px, 94%); padding: clamp(18px, 4vw, 30px); border: 2px solid rgba(211,235,227,.52); border-radius: 5px; background: rgba(12,26,31,.94); text-align: center; box-shadow: 0 12px 38px rgba(0,0,0,.3); }
+    .game-overlay-kicker { margin: 0 0 11px; color: #9addad; font: 700 .72rem/1.4 ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .18em; }
+    .game-overlay-card h3 { margin: 0; color: white; font: 700 clamp(1.3rem, 3.4vw, 2.2rem)/1.15 ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .game-overlay-card p:not(.game-overlay-kicker) { margin: 14px 0 19px; color: #cad8d2; font-size: .83rem; line-height: 1.6; }
+    .game-overlay-card button, .game-control { min-height: 42px; padding: 10px 15px; border: 2px solid #80d99a; border-radius: 4px; background: #184d39; color: #effff2; font: 700 .78rem ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .game-overlay-card button:hover, .game-control:hover { background: #22684b; }
+    .game-overlay-card button:focus-visible, .game-control:focus-visible { outline: 3px solid #f4ca5b; outline-offset: 3px; }
+    .game-meta { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-top: 14px; color: #c3d0cb; font-size: .74rem; }
+    .game-meta strong { color: #9addad; }
+    .game-key-help { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .game-key { display: inline-block; min-width: 26px; margin: 0 2px; padding: 4px 6px; border: 1px solid #60736d; border-radius: 3px; color: #f2f8f3; text-align: center; }
+    .touch-controls { display: none; gap: 8px; margin-top: 13px; }
+    .game-control { flex: 1; min-width: 48px; padding-inline: 8px; }
+    .game-credit { margin: 13px 0 0; color: #93a6a0; font-size: .7rem; }
     .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 25px; margin-bottom: 27px; }
     .section-kicker { margin: 0 0 10px; color: var(--green); font-size: .69rem; font-weight: 800; letter-spacing: .19em; text-transform: uppercase; }
     h2 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: clamp(2rem, 4vw, 3.5rem); font-weight: 400; letter-spacing: -.055em; }
     .section-heading > p:last-child { max-width: 350px; margin: 0; color: var(--muted); font-size: .9rem; line-height: 1.65; }
-    .notice { display: flex; align-items: flex-start; gap: 12px; margin: 0 0 23px; padding: 14px 17px; border: 1px solid #e6dcc1; border-radius: 5px; background: #fcf7e9; color: #6a5a2e; font-size: .78rem; line-height: 1.55; }
-    .notice strong { color: #4b401f; }
-    .notice-mark { flex: none; width: 19px; height: 19px; display: grid; place-items: center; border-radius: 50%; background: #efe2ba; font-size: .72rem; font-weight: 800; }
     .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
     .card { min-height: 225px; padding: 23px; border: 1px solid var(--line); border-radius: 6px; background: var(--white); box-shadow: 0 6px 20px rgba(25,44,35,.025); }
     .card-label { margin: 0; color: var(--muted); font-size: .7rem; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
@@ -116,6 +135,7 @@
     @media (max-width: 860px) {
       .hero { grid-template-columns: 1fr; gap: 38px; padding-top: 62px; }
       .hero-panel { max-width: 560px; }
+      .game-heading { align-items: flex-start; flex-direction: column; }
       .grid { grid-template-columns: repeat(2, 1fr); }
       .about-grid { grid-template-columns: 1fr; }
     }
@@ -124,12 +144,19 @@
       .topbar { height: 66px; }
       .hero { padding-top: 52px; padding-bottom: 52px; }
       .section { padding-top: 54px; padding-bottom: 54px; }
+      .game-section { padding-top: 54px; padding-bottom: 54px; }
+      .game-shell { border-width: 4px; }
+      .game-meta { align-items: flex-start; flex-direction: column; }
       .section-heading { align-items: flex-start; flex-direction: column; }
       .grid { grid-template-columns: 1fr; }
       .card { min-height: 190px; }
       .about-card { grid-template-columns: 1fr; }
       .reaction { width: 100%; height: auto; max-height: 300px; object-fit: cover; object-position: center 38%; }
       .footer { flex-direction: column; }
+    }
+    @media (pointer: coarse), (max-width: 700px) {
+      .touch-controls { display: flex; }
+      .game-key-help { display: none; }
     }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
@@ -190,12 +217,40 @@
         </div>
       </section>
 
+      <section class="game-section" id="vinteroppdrag" aria-labelledby="game-title">
+        <div class="game-heading">
+          <div><p class="section-kicker" style="color:#9addad">VINTEROPPDRAG / 01</p><h2 id="game-title">Tobias vs. vindmøllene</h2></div>
+          <p>Pixel-Kirkenes er dekket av snø. Vindmøllene går løs på reinen — hjelp Tobias å slå dem ut med snøballer.</p>
+        </div>
+        <div class="game-shell">
+          <canvas id="kirkenes-game" width="960" height="540" tabindex="0" aria-label="Sideskrollende pixelart-spill i Kirkenes. Styr Tobias på reinen forbi vindmøller, hopp og kast snøballer.">Pixelart-spill: styr Tobias med piltastene, hopp med mellomrom og kast snøball med X.</canvas>
+          <div class="game-overlay" id="game-overlay">
+            <div class="game-overlay-card">
+              <p class="game-overlay-kicker" id="game-overlay-kicker">KIRKENES · ARCADE MODE</p>
+              <h3 id="game-overlay-title">Redd reinen.<br>Stans vindmøllene.</h3>
+              <p id="game-overlay-text">Hopp over de roterende bladene, og treff hvert tårn med snøballer før reinen mister alle tre livene.</p>
+              <button id="game-overlay-button" type="button">Start vinteroppdrag</button>
+            </div>
+          </div>
+        </div>
+        <div class="game-meta">
+          <div class="game-key-help"><span class="game-key">←</span><span class="game-key">→</span> bevege deg <span class="game-key">SPACE</span> hopp <span class="game-key">X</span> kast snøball</div>
+          <div>REINENS LIV: <strong id="reindeer-lives">♥ ♥ ♥</strong> &nbsp; · &nbsp; VINDMØLLER: <strong id="windmill-score">0 / 4</strong></div>
+        </div>
+        <div class="touch-controls" aria-label="Spillkontroller">
+          <button class="game-control" type="button" data-hold="left" aria-label="Gå til venstre">◀</button>
+          <button class="game-control" type="button" data-hold="right" aria-label="Gå til høyre">▶</button>
+          <button class="game-control" type="button" data-action="jump">HOPP</button>
+          <button class="game-control" type="button" data-action="throw">SNØBALL</button>
+        </div>
+        <p class="game-credit">Pixelart generert fra Tobias-bildene og en Kirkenes-vinterkulisse. Vindmøllekampen er et tøysete minispill.</p>
+      </section>
+
       <section class="section" id="overblikk">
         <div class="section-heading">
           <div><p class="section-kicker">01 / Overblikk</p><h2>Et lite mandat.</h2></div>
           <p>En side med finansfølelse og en uventet åpning. Innholdet bygger på opplysninger fra Aron selv.</p>
         </div>
-        <div class="notice"><span class="notice-mark">i</span><span><strong>Porteføljeparodi:</strong> Grafen er illustrerende, ikke finansielle data. Ingen avkastning, stillingstitler eller kvalifikasjoner er funnet på.</span></div>
         <div class="grid">
           <section class="card"><p class="card-label">Fokus</p><h3>Økonomi med bakkekontakt</h3><p>Interesse for hvordan prioriteringer, budsjetter og gode beslutninger skaper verdi over tid.</p></section>
           <section class="card"><p class="card-label">Styrearbeid</p><h3>Hytte styret</h3><p>Aron beskriver utviklingen under seg med egne ord: «det går jekla bra».</p></section>
@@ -206,7 +261,6 @@
       <section class="section" id="erfaring" style="padding-top:0">
         <div class="section-heading">
           <div><p class="section-kicker">02 / Arbeidsmåte</p><h2>Stødig på tall.<br>Best med folk.</h2></div>
-          <p>Finansspråk i presentasjonen, sunn fornuft i praksis.</p>
         </div>
         <div class="grid">
           <section class="card"><p class="card-label">01 · Prioritering</p><h3>Se helheten</h3><p>Skille mellom det som haster og det som faktisk flytter prosjektet framover.</p></section>
@@ -270,6 +324,7 @@
       });
     });
   </script>
+  <script src="game.js"></script>
 </body>
 </html>
 

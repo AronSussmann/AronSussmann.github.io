@@ -13,7 +13,7 @@
     rotor: makeImage("vindmolle-brawler.png"),
     tobiasActions: makeImage("tobias-actions.png"),
     rotorActions: makeImage("vindmolle-actions.png"),
-    aletteActions: makeImage("alette-actions.png"),
+    tobleroneActions: makeImage("toblerone-boss-actions.png"),
     reindeer: makeImage("rein-npc.png")
   };
   const overlay = document.getElementById("game-overlay");
@@ -38,11 +38,12 @@
     runner: { hp: 2, speed: 108, damage: 1, label: "ROTOR-RUSHER", scale: 0.93, windup: 0.50, range: 105, score: 120 },
     drifter: { hp: 3, speed: 68, damage: 1, label: "VINDMØLLEFOLK", scale: 1, windup: 0.64, range: 110, score: 170 },
     brute: { hp: 6, speed: 47, damage: 1, label: "SNØBRØYTER", scale: 1.15, windup: 0.80, range: 125, score: 300 },
-    boss: { hp: 20, speed: 67, damage: 2, label: "ALETTE SCHREINER", scale: 1.48, windup: 0.95, range: 178, score: 1500 }
+    boss: { hp: 20, speed: 67, damage: 2, label: "TOBLERONE", scale: 1.48, windup: 0.95, range: 178, score: 1500 }
   };
 
   let state = "ready", player, enemies = [], particles = [], floaters = [], pickups = [];
   let cameraX = 0, currentWave = 1, allCleared = false, score = 0;
+  let introDialogueVisible = false;
   let bestScore = readBest(), gameTime = 0, lastFrame = performance.now();
   let hitStop = 0, shake = 0, flash = 0, stageNotice = { text: "", timer: 0 };
   let bufferedAttack = null, attackBufferTimer = 0;
@@ -68,20 +69,6 @@
     const cellWidth = image.naturalWidth / 3, cellHeight = image.naturalHeight / 3;
     ctx.drawImage(image, column * cellWidth, row * cellHeight, cellWidth, cellHeight, -width / 2, -height, width, height);
   }
-  function drawPlayerLogo(row, column, h, s) {
-    const positions = [
-      [[0, -0.58], [-0.05, -0.58], [-0.03, -0.58]],
-      [[-0.02, -0.59], [-0.12, -0.61], [-0.02, -0.59]],
-      [[0, -0.59], [-0.17, -0.60], [-0.07, -0.60]]
-    ];
-    const [x, y] = positions[row][column];
-    ctx.save(); ctx.translate(x * h, y * h);
-    if (player.face < 0) ctx.scale(-1, 1);
-    ctx.textAlign = "center"; ctx.font = "900 " + Math.max(8, Math.round(10 * s)) + "px ui-monospace, monospace";
-    ctx.lineWidth = 2 * s; ctx.strokeStyle = "#59431a"; ctx.fillStyle = "#fff8d6";
-    ctx.strokeText("UKA", 0, 4 * s); ctx.fillText("UKA", 0, 4 * s); ctx.restore();
-  }
-
   function createEnemy(type, x, z) {
     const stats = enemyStats[type];
     return { type, x, z, hp: stats.hp, maxHp: stats.hp, speed: stats.speed, damage: stats.damage,
@@ -93,7 +80,7 @@
     currentWave = number;
     const plan = wavePlans[number], startX = firstX === undefined ? 520 : firstX;
     enemies = plan.map((spec) => createEnemy(spec.type, startX + spec.offset, spec.z));
-    notice(number === 4 ? "BOSS: ALETTE SCHREINER" : "BØLGE " + number + " / 4", 2.25);
+    notice(number === 4 ? "BOSS: TOBLERONE" : "BØLGE " + number + " / 4", 2.25);
     updateReadouts();
   }
   function resetGame() {
@@ -102,6 +89,7 @@
       parry: 0, blocking: false, blockWasDown: false, step: 0, walkPulse: 0, attackFlash: 0 };
     enemies = []; particles = []; floaters = []; pickups = []; cameraX = 0; score = 0;
     currentWave = 1; allCleared = false; hitStop = 0; shake = 0; flash = 0; stageNotice = { text: "", timer: 0 };
+    introDialogueVisible = true;
     bufferedAttack = null; attackBufferTimer = 0;
     spawnWave(1, 500);
     state = "running"; overlay.hidden = true; clearHeld(); updateReadouts(); canvas.focus({ preventScroll: true });
@@ -114,10 +102,10 @@
       overlayText.textContent = "Trykk P eller fortsett-knappen når du er klar."; overlayButton.textContent = "Fortsett";
     } else if (mode === "won") {
       overlayKicker.textContent = "OPPDRAG FULLFØRT"; overlayTitle.textContent = "Reinen er trygg.";
-      overlayText.textContent = "Alette Schreiner er slått ut. Du fikk " + score + " poeng" + (score >= bestScore ? " og ny rekord!" : ".") + " Vil du ta en runde til?";
+      overlayText.textContent = "Toblerone er slått ut. Du fikk " + score + " poeng" + (score >= bestScore ? " og ny rekord!" : ".") + " Vil du ta en runde til?";
       overlayButton.textContent = "Spill igjen";
     } else if (mode === "lost") {
-      overlayKicker.textContent = "GAME OVER"; overlayTitle.textContent = currentWave >= 4 ? "Alette vant runden." : "Vindmøllefolket vant runden.";
+      overlayKicker.textContent = "GAME OVER"; overlayTitle.textContent = currentWave >= 4 ? "Toblerone vant runden." : "Vindmøllefolket vant runden.";
       overlayText.textContent = "Prøv å blokkere idet angrepsvarselet blinker, og dash til en bedre posisjon.";
       overlayButton.textContent = "Prøv igjen";
     }
@@ -219,6 +207,7 @@
   }
   function nudge(direction) {
     if (state !== "running" || !player) return;
+    introDialogueVisible = false;
     if (direction === "left") player.x -= 12;
     if (direction === "right") player.x += 12;
     if (direction === "up") player.z -= 0.016;
@@ -487,7 +476,7 @@
       ctx.fillStyle = "#ff775c"; ctx.font = "900 " + Math.round(15 * s) + "px ui-monospace, monospace"; ctx.textAlign = "center"; ctx.fillText("!", 0, -h - 8 * s);
     }
     if (enemy.hurt > 0 && Math.floor(gameTime * 32) % 2 === 0) ctx.globalAlpha *= 0.42;
-    const actionArt = enemy.type === "boss" ? art.aletteActions : art.rotorActions;
+    const actionArt = enemy.type === "boss" ? art.tobleroneActions : art.rotorActions;
     if (actionArt.complete && actionArt.naturalWidth) {
       let row = 0, column = 0;
       if (enemy.mode === "tell") {
@@ -512,7 +501,7 @@
     }
     if (enemy.type === "boss" && !enemy.dead) {
       ctx.restore(); drawBar(x, foot - h - 8, 80 * scaleAt(enemy.z), 6, enemy.hp / enemy.maxHp, "#ee6955", "rgba(14,26,32,.75)");
-      ctx.fillStyle = "#fff1dc"; ctx.font = "bold 9px ui-monospace, monospace"; ctx.textAlign = "center"; ctx.fillText("ALETTE SCHREINER", x, foot - h - 14); return;
+      ctx.fillStyle = "#fff1dc"; ctx.font = "bold 9px ui-monospace, monospace"; ctx.textAlign = "center"; ctx.fillText("TOBLERONE", x, foot - h - 14); return;
     }
     if (!enemy.dead && enemy.hp < enemy.maxHp) {
       ctx.restore(); drawBar(x, foot - h - 7, 38 * scaleAt(enemy.z), 4, enemy.hp / enemy.maxHp, "#f18870", "rgba(14,26,32,.7)"); return;
@@ -532,7 +521,6 @@
     ctx.save(); ctx.translate(screenX(player.x), foot + bob); ctx.scale(player.face < 0 ? -1 : 1, 1);
     if (art.tobiasActions.complete && art.tobiasActions.naturalWidth) {
       drawActionFrame(art.tobiasActions, row, column, h * 1.12, h);
-      drawPlayerLogo(row, column, h, s);
     } else {
       ctx.fillStyle = "#e8b900"; ctx.fillRect(-h * 0.28, -h * 0.75, h * 0.56, h * 0.38);
       ctx.fillStyle = "#34221d"; ctx.fillRect(-h * 0.20, -h, h * 0.40, h * 0.24);
@@ -547,6 +535,20 @@
       ctx.fillStyle = "rgba(202,239,255," + (0.35 - i * 0.07) + ")";
       ctx.fillRect(screenX(player.x) - player.face * i * 12 * s - 2, foot - 20 * s, 5 * s, 3 * s);
     }
+  }
+  function drawIntroDialogue() {
+    if (!introDialogueVisible || !player) return;
+    const bubbleWidth = 292, bubbleHeight = 38, h = 214 * scaleAt(player.z), foot = zToY(player.z);
+    const centerX = Math.max(bubbleWidth / 2 + 8, Math.min(W - bubbleWidth / 2 - 8, screenX(player.x)));
+    const top = Math.max(138, foot - h - 55), left = centerX - bubbleWidth / 2;
+    ctx.save();
+    ctx.fillStyle = "#fff8e8"; ctx.strokeStyle = "#192a2a"; ctx.lineWidth = 3;
+    ctx.fillRect(left, top, bubbleWidth, bubbleHeight); ctx.strokeRect(left, top, bubbleWidth, bubbleHeight);
+    ctx.beginPath(); ctx.moveTo(centerX - 10, top + bubbleHeight); ctx.lineTo(centerX, top + bubbleHeight + 12); ctx.lineTo(centerX + 10, top + bubbleHeight); ctx.closePath();
+    ctx.fillStyle = "#fff8e8"; ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#162323"; ctx.font = "900 15px ui-monospace, monospace"; ctx.textAlign = "center";
+    ctx.fillText("Æ e så fette lei vindmølla", centerX, top + 25);
+    ctx.restore();
   }
   function drawBar(cx, y, width, height, ratio, color, back) {
     ctx.fillStyle = back; ctx.fillRect(cx - width / 2, y, width, height);
@@ -606,7 +608,7 @@
       ctx.fillStyle = "rgba(3,15,21,.97)"; ctx.fillRect(W / 2 - 220, 14, 440, 51);
       ctx.strokeStyle = "rgba(235,248,241,.68)"; ctx.strokeRect(W / 2 - 219, 15, 438, 49);
       ctx.fillStyle = "#ffffff"; ctx.font = "900 17px ui-monospace, monospace"; ctx.textAlign = "center";
-      ctx.fillText("ALETTE SCHREINER" + (boss.hp < boss.maxHp * 0.48 ? " · RASER" : ""), W / 2, 35);
+      ctx.fillText("TOBLERONE" + (boss.hp < boss.maxHp * 0.48 ? " · RASER" : ""), W / 2, 35);
       drawBar(W / 2, 45, 410, 11, boss.hp / boss.maxHp, boss.hp < boss.maxHp * 0.48 ? "#ff755f" : "#ecaf62", "#29383b");
     }
     if (player.comboCount > 1 && player.comboTimer > 0) {
@@ -636,7 +638,7 @@
       else if (d.type === "player") drawPlayer();
       else drawReindeer();
     }
-    drawPickups(); drawEffects(); drawHud(); drawWeather();
+    drawPickups(); drawEffects(); drawIntroDialogue(); drawHud(); drawWeather();
     if (flash > 0) { ctx.fillStyle = "rgba(255,242,201," + Math.min(0.28, flash) + ")"; ctx.fillRect(-10, -10, W + 20, H + 20); }
     ctx.restore();
   }

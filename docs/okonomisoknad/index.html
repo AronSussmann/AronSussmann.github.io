@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#111b1e">
-  <meta name="description" content="Tobias mot Alette Schreiner: et 2,5D beat ’em up i pixelart-Kirkenes. Søknadstekst nederst.">
-  <title>Tobias mot Alette Schreiner — Kirkenes Beat ’em up</title>
+  <meta name="description" content="Toblerone: The Game — et 2,5D beat ’em up i pixelart-Kirkenes med Tobias.">
+  <title>Toblerone: The Game — Kirkenes Beat ’em up</title>
   <style>
     :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
     * { box-sizing: border-box; }
@@ -55,7 +55,18 @@
     .application-inner { width: min(800px, 100%); margin: 0 auto; }
     .application-label { margin: 0 0 11px; color: #375747; font-size: .8rem; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
     .application h2 { margin: 0 0 16px; font-size: clamp(1.5rem, 3vw, 2rem); line-height: 1.2; }
-    .application p:last-child { margin: 0; color: #303d36; font-size: clamp(1rem, 2vw, 1.1rem); line-height: 1.8; }
+    .pitch-line { margin: 0 0 18px; color: #17211d; font-size: clamp(1.5rem, 4vw, 2.2rem); font-weight: 900; letter-spacing: -.04em; }
+    .pitch-choices { display: flex; flex-wrap: wrap; gap: 11px; }
+    .pitch-choice { min-height: 48px; padding: 12px 17px; border: 2px solid #174d37; border-radius: 5px; background: #174d37; color: #fff; font-weight: 800; }
+    .pitch-choice:hover { background: #246b4c; }
+    .pitch-choice.secondary { border-color: #56665e; background: transparent; color: #26352d; }
+    .pitch-choice.secondary:hover { background: #e7ece7; }
+    .meme-dialog { position: fixed; z-index: 50; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(8, 14, 17, .84); }
+    .meme-card { position: relative; display: grid; justify-items: center; gap: 14px; width: min(920px, 100%); max-height: calc(100svh - 40px); overflow: auto; padding: 54px 18px 18px; border: 1px solid #cad3ce; border-radius: 10px; background: #fff; box-shadow: 0 24px 80px rgba(0,0,0,.42); }
+    .meme-image { display: block; max-width: 100%; max-height: min(70svh, 720px); object-fit: contain; }
+    .meme-close { position: absolute; top: 10px; right: 10px; min-height: 40px; padding: 8px 12px; border: 1px solid #65756c; border-radius: 5px; background: #fff; color: #17211d; font-weight: 750; }
+    .meme-next { min-height: 44px; padding: 10px 16px; border: 0; border-radius: 5px; background: #174d37; color: #fff; font-weight: 800; }
+    .meme-next:hover { background: #246b4c; }
     @media (pointer: coarse), (max-width: 700px) {
       .touch-controls { display: grid; }
       .game-key-help { display: none; }
@@ -97,21 +108,21 @@
     <article class="portfolio" id="portfolio" hidden>
       <section class="game-section" id="vinteroppdrag" aria-labelledby="game-title">
         <div class="game-inner">
-          <h1 class="game-title" id="game-title">Tobias mot Alette Schreiner</h1>
+          <h1 class="game-title" id="game-title">Toblerone: The Game</h1>
           <div class="game-shell">
             <canvas id="kirkenes-game" width="960" height="540" tabindex="0" aria-label="Pixelart slåssespill i Kirkenes. Gå med piltastene eller WASD, slå med J, spark med K, bruk spesialangrep med C, dash med mellomrom og blokker med B.">Pixelart slåssespill: beveg deg med piltastene eller WASD, slå med J, spark med K, bruk spesialangrep med C, dash med mellomrom og blokker med B.</canvas>
             <div class="game-overlay" id="game-overlay">
               <div class="game-overlay-card">
                 <p class="game-overlay-kicker" id="game-overlay-kicker">KIRKENES · BEAT ’EM UP</p>
                 <h2 id="game-overlay-title">Klar for siste runde?</h2>
-                <p id="game-overlay-text">Gå sidelengs og inn i dybden. Slå med J, spark med K, og møt Alette Schreiner i siste runde.</p>
+                <p id="game-overlay-text">Gå sidelengs og inn i dybden. Slå med J, spark med K, og møt Toblerone i siste runde.</p>
                 <button id="game-overlay-button" type="button">Gå inn i arenaen</button>
               </div>
             </div>
           </div>
           <div class="game-meta">
             <div class="game-key-help"><span class="game-key">WASD</span> gå / dybde <span class="game-key">J</span> slag <span class="game-key">K</span> spark <span class="game-key">C</span> spesial <span class="game-key">SPACE</span> dash <span class="game-key">B</span> blokk / parry <span class="game-key">P</span> pause</div>
-            <div class="game-meta-stats"><span>LIV <strong id="player-lives">10 / 10</strong></span><span>KOMBO <strong id="combo-readout">—</strong></span><span>POENG <strong id="score-readout">0</strong></span><span id="boss-readout" hidden>ALETTE <strong>VENTER</strong></span><button type="button" id="sound-toggle" aria-pressed="true">LYD: PÅ</button></div>
+            <div class="game-meta-stats"><span>LIV <strong id="player-lives">10 / 10</strong></span><span>KOMBO <strong id="combo-readout">—</strong></span><span>POENG <strong id="score-readout">0</strong></span><span id="boss-readout" hidden>TOBLERONE <strong>VENTER</strong></span><button type="button" id="sound-toggle" aria-pressed="true">LYD: PÅ</button></div>
           </div>
           <div class="touch-controls" aria-label="Berøringskontroller">
             <button class="game-control" type="button" data-hold="up" aria-label="Gå bakover i dybden">↑ DYBDE</button>
@@ -129,12 +140,21 @@
 
       <section class="application" id="soknad" aria-labelledby="soknad-title">
         <div class="application-inner">
-          <p class="application-label">Økonomi · ansvar · samarbeid</p>
-          <h2 id="soknad-title">Søknadstekst</h2>
-          <p>Jeg motiveres av økonomi, gode prioriteringer og samarbeid. Gjennom engasjement i Hytte styret og med Katiba har jeg fått erfaring med å ta ansvar, følge opp oppgaver og bidra til at ting går framover. Jeg ønsker å bruke denne erfaringen i en økonomirolle og fortsette å utvikle meg faglig.</p>
+          <h2 class="pitch-line" id="soknad-title">bruh velg meg as</h2>
+          <div class="pitch-choices">
+            <button class="pitch-choice" id="choose-aron" type="button">Velg meg, Aron, som økonomiansvarlig</button>
+            <button class="pitch-choice secondary" id="choose-other" type="button">En annen på BS som økonomiansvarlig</button>
+          </div>
         </div>
       </section>
     </article>
+    <div class="meme-dialog" id="meme-dialog" role="dialog" aria-modal="true" aria-label="Reaksjonsbilde" hidden>
+      <div class="meme-card">
+        <button class="meme-close" id="meme-close" type="button" aria-label="Lukk bilde">Lukk ×</button>
+        <img class="meme-image" id="meme-image" alt="">
+        <button class="meme-next" id="meme-next" type="button" hidden>Neste bilde →</button>
+      </div>
+    </div>
   </main>
   <script>
     const gate = document.getElementById('gate');
@@ -158,7 +178,44 @@
       history.replaceState(null, '', location.pathname + location.search + '#portfolio');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }, { once: true });
+
+    const memeDialog = document.getElementById('meme-dialog');
+    const memeImage = document.getElementById('meme-image');
+    const memeNext = document.getElementById('meme-next');
+    const memeClose = document.getElementById('meme-close');
+    let memeStage = '';
+    let memeOpener = null;
+    function showMeme(stage) {
+      memeStage = stage;
+      if (stage === 'up') {
+        memeImage.src = 'assets/stonks-up.webp';
+        memeImage.alt = 'Stonks-grafen peker opp.';
+        memeNext.hidden = true;
+      } else if (stage === 'down') {
+        memeImage.src = 'assets/stonks-down.jpg';
+        memeImage.alt = 'Stonks-grafen peker ned.';
+        memeNext.hidden = false;
+        memeNext.textContent = 'Og så skjedde dette →';
+      } else {
+        memeImage.src = 'assets/reaction-head.jpg';
+        memeImage.alt = 'En person holder seg for hodet i sjokk.';
+        memeNext.hidden = true;
+      }
+      memeDialog.hidden = false;
+      memeClose.focus();
+    }
+    function closeMeme() {
+      memeDialog.hidden = true;
+      memeImage.removeAttribute('src');
+      if (memeOpener) memeOpener.focus();
+    }
+    document.getElementById('choose-aron').addEventListener('click', (event) => { memeOpener = event.currentTarget; showMeme('up'); });
+    document.getElementById('choose-other').addEventListener('click', (event) => { memeOpener = event.currentTarget; showMeme('down'); });
+    memeNext.addEventListener('click', () => { if (memeStage === 'down') showMeme('reaction'); });
+    memeClose.addEventListener('click', closeMeme);
+    memeDialog.addEventListener('click', (event) => { if (event.target === memeDialog) closeMeme(); });
+    window.addEventListener('keydown', (event) => { if (event.key === 'Escape' && !memeDialog.hidden) closeMeme(); });
   </script>
-  <script src="game.js?v=5"></script>
+  <script src="game.js?v=6"></script>
 </body>
 </html>

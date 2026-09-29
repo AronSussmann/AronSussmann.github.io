@@ -600,24 +600,24 @@
   function drawHud() {
     ctx.fillStyle = "rgba(3,15,21,.97)"; ctx.fillRect(15, 14, 330, 112);
     ctx.strokeStyle = "rgba(235,248,241,.68)"; ctx.lineWidth = 2; ctx.strokeRect(16, 15, 328, 110);
-    ctx.fillStyle = "#c8ffdb"; ctx.font = "900 16px ui-monospace, monospace"; ctx.textAlign = "left";
-    ctx.fillText("TOBIAS  //  KIRKENES", 28, 37); ctx.fillStyle = "#ffffff"; ctx.font = "bold 13px ui-monospace, monospace"; ctx.fillText("LIV", 28, 61);
+    ctx.fillStyle = "#c8ffdb"; ctx.font = "900 19px ui-monospace, monospace"; ctx.textAlign = "left";
+    ctx.fillText("TOBIAS  //  KIRKENES", 28, 38); ctx.fillStyle = "#ffffff"; ctx.font = "bold 16px ui-monospace, monospace"; ctx.fillText("LIV", 28, 62);
     for (let i = 0; i < player.maxHp; i += 1) {
       ctx.fillStyle = i < player.hp ? "#ff9d8b" : "#52636a"; ctx.fillRect(63 + i * 22, 47, 17, 15);
       if (i < player.hp) { ctx.fillStyle = "#fff0e9"; ctx.fillRect(66 + i * 22, 49, 6, 4); }
     }
-    ctx.fillStyle = "#ffffff"; ctx.font = "bold 13px ui-monospace, monospace"; ctx.fillText("SPESIAL", 28, 96);
-    ctx.fillStyle = "rgba(255,255,255,.24)"; ctx.fillRect(94, 83, 185, 15);
-    ctx.fillStyle = player.special >= 45 ? "#f4cc69" : "#69d5f0"; ctx.fillRect(96, 85, 181 * (player.special / 100), 11);
-    ctx.fillStyle = "#ffffff"; ctx.font = "900 12px ui-monospace, monospace"; ctx.fillText(Math.floor(player.special) + "%", 286, 96);
+    ctx.fillStyle = "#ffffff"; ctx.font = "bold 16px ui-monospace, monospace"; ctx.fillText("SPESIAL", 28, 97);
+    ctx.fillStyle = "rgba(255,255,255,.24)"; ctx.fillRect(112, 83, 167, 15);
+    ctx.fillStyle = player.special >= 45 ? "#f4cc69" : "#69d5f0"; ctx.fillRect(114, 85, 163 * (player.special / 100), 11);
+    ctx.fillStyle = "#ffffff"; ctx.font = "900 15px ui-monospace, monospace"; ctx.fillText(Math.floor(player.special) + "%", 286, 97);
     ctx.fillStyle = "rgba(3,15,21,.97)"; ctx.fillRect(W - 207, 14, 192, 55); ctx.strokeStyle = "rgba(235,248,241,.68)"; ctx.strokeRect(W - 206, 15, 190, 53);
-    ctx.fillStyle = "#ffffff"; ctx.font = "900 14px ui-monospace, monospace"; ctx.textAlign = "right"; ctx.fillText("BØLGE " + Math.min(currentWave, 4) + " / 4", W - 27, 37);
-    ctx.fillStyle = "#e2eee9"; ctx.font = "bold 12px ui-monospace, monospace"; ctx.fillText(String(score).padStart(6, "0") + " P", W - 27, 56);
+    ctx.fillStyle = "#ffffff"; ctx.font = "900 17px ui-monospace, monospace"; ctx.textAlign = "right"; ctx.fillText("BØLGE " + Math.min(currentWave, 4) + " / 4", W - 27, 37);
+    ctx.fillStyle = "#e2eee9"; ctx.font = "bold 15px ui-monospace, monospace"; ctx.fillText(String(score).padStart(6, "0") + " P", W - 27, 58);
     const boss = enemies.find((enemy) => enemy.type === "boss" && !enemy.dead);
     if (boss) {
       ctx.fillStyle = "rgba(3,15,21,.97)"; ctx.fillRect(W / 2 - 220, 14, 440, 51);
       ctx.strokeStyle = "rgba(235,248,241,.68)"; ctx.strokeRect(W / 2 - 219, 15, 438, 49);
-      ctx.fillStyle = "#ffffff"; ctx.font = "900 14px ui-monospace, monospace"; ctx.textAlign = "center";
+      ctx.fillStyle = "#ffffff"; ctx.font = "900 17px ui-monospace, monospace"; ctx.textAlign = "center";
       ctx.fillText("ALETTE SCHREINER" + (boss.hp < boss.maxHp * 0.48 ? " · RASER" : ""), W / 2, 35);
       drawBar(W / 2, 45, 410, 11, boss.hp / boss.maxHp, boss.hp < boss.maxHp * 0.48 ? "#ff755f" : "#ecaf62", "#29383b");
     }
@@ -627,7 +627,7 @@
     }
     if (stageNotice.timer > 0) {
       ctx.globalAlpha = Math.min(1, stageNotice.timer * 2); ctx.fillStyle = "rgba(12,25,30,.83)"; ctx.fillRect(W / 2 - 182, H - 49, 364, 30);
-      ctx.fillStyle = "#eaf7ee"; ctx.font = "900 11px ui-monospace, monospace"; ctx.textAlign = "center"; ctx.fillText(stageNotice.text, W / 2, H - 30); ctx.globalAlpha = 1;
+      ctx.fillStyle = "#eaf7ee"; ctx.font = "900 14px ui-monospace, monospace"; ctx.textAlign = "center"; ctx.fillText(stageNotice.text, W / 2, H - 30); ctx.globalAlpha = 1;
     }
   }
   function drawWeather() {

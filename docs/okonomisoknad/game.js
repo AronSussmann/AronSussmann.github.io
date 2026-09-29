@@ -38,7 +38,7 @@
     runner: { hp: 2, speed: 108, damage: 1, label: "ROTOR-RUSHER", scale: 0.93, windup: 0.50, range: 105, score: 120 },
     drifter: { hp: 3, speed: 68, damage: 1, label: "VINDMØLLEFOLK", scale: 1, windup: 0.64, range: 110, score: 170 },
     brute: { hp: 6, speed: 47, damage: 1, label: "SNØBRØYTER", scale: 1.15, windup: 0.80, range: 125, score: 300 },
-    boss: { hp: 20, speed: 67, damage: 2, label: "TOBLERONE", scale: 1.48, windup: 0.95, range: 178, score: 1500 }
+    boss: { hp: 20, speed: 67, damage: 2, label: "ALETTE", scale: 1.48, windup: 0.95, range: 178, score: 1500 }
   };
 
   let state = "ready", player, enemies = [], particles = [], floaters = [], pickups = [];
@@ -80,7 +80,7 @@
     currentWave = number;
     const plan = wavePlans[number], startX = firstX === undefined ? 520 : firstX;
     enemies = plan.map((spec) => createEnemy(spec.type, startX + spec.offset, spec.z));
-    notice(number === 4 ? "BOSS: TOBLERONE" : "BØLGE " + number + " / 4", 2.25);
+    notice(number === 4 ? "BOSS: ALETTE" : "BØLGE " + number + " / 4", 2.25);
     updateReadouts();
   }
   function resetGame() {
@@ -102,10 +102,10 @@
       overlayText.textContent = "Trykk P eller fortsett-knappen når du er klar."; overlayButton.textContent = "Fortsett";
     } else if (mode === "won") {
       overlayKicker.textContent = "OPPDRAG FULLFØRT"; overlayTitle.textContent = "Reinen er trygg.";
-      overlayText.textContent = "Toblerone er slått ut. Du fikk " + score + " poeng" + (score >= bestScore ? " og ny rekord!" : ".") + " Vil du ta en runde til?";
+      overlayText.textContent = "Alette er slått ut. Du fikk " + score + " poeng" + (score >= bestScore ? " og ny rekord!" : ".") + " Vil du ta en runde til?";
       overlayButton.textContent = "Spill igjen";
     } else if (mode === "lost") {
-      overlayKicker.textContent = "GAME OVER"; overlayTitle.textContent = currentWave >= 4 ? "Toblerone vant runden." : "Vindmøllefolket vant runden.";
+      overlayKicker.textContent = "GAME OVER"; overlayTitle.textContent = currentWave >= 4 ? "Alette vant runden." : "Vindmøllefolket vant runden.";
       overlayText.textContent = "Prøv å blokkere idet angrepsvarselet blinker, og dash til en bedre posisjon.";
       overlayButton.textContent = "Prøv igjen";
     }
@@ -501,7 +501,7 @@
     }
     if (enemy.type === "boss" && !enemy.dead) {
       ctx.restore(); drawBar(x, foot - h - 8, 80 * scaleAt(enemy.z), 6, enemy.hp / enemy.maxHp, "#ee6955", "rgba(14,26,32,.75)");
-      ctx.fillStyle = "#fff1dc"; ctx.font = "bold 9px ui-monospace, monospace"; ctx.textAlign = "center"; ctx.fillText("TOBLERONE", x, foot - h - 14); return;
+      ctx.fillStyle = "#fff1dc"; ctx.font = "bold 9px ui-monospace, monospace"; ctx.textAlign = "center"; ctx.fillText("ALETTE", x, foot - h - 14); return;
     }
     if (!enemy.dead && enemy.hp < enemy.maxHp) {
       ctx.restore(); drawBar(x, foot - h - 7, 38 * scaleAt(enemy.z), 4, enemy.hp / enemy.maxHp, "#f18870", "rgba(14,26,32,.7)"); return;
@@ -608,7 +608,7 @@
       ctx.fillStyle = "rgba(3,15,21,.97)"; ctx.fillRect(W / 2 - 220, 14, 440, 51);
       ctx.strokeStyle = "rgba(235,248,241,.68)"; ctx.strokeRect(W / 2 - 219, 15, 438, 49);
       ctx.fillStyle = "#ffffff"; ctx.font = "900 17px ui-monospace, monospace"; ctx.textAlign = "center";
-      ctx.fillText("TOBLERONE" + (boss.hp < boss.maxHp * 0.48 ? " · RASER" : ""), W / 2, 35);
+      ctx.fillText("ALETTE" + (boss.hp < boss.maxHp * 0.48 ? " · RASER" : ""), W / 2, 35);
       drawBar(W / 2, 45, 410, 11, boss.hp / boss.maxHp, boss.hp < boss.maxHp * 0.48 ? "#ff755f" : "#ecaf62", "#29383b");
     }
     if (player.comboCount > 1 && player.comboTimer > 0) {

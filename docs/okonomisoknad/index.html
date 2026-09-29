@@ -49,12 +49,9 @@
     .reveal-button { padding: 19px 31px; border: 1px solid #d9dfda; border-radius: 99px; background: white; color: var(--ink); font-size: 1.1rem; font-weight: 750; box-shadow: var(--shadow); transition: .2s; }
     .reveal-button:hover { border-color: var(--green); color: var(--green); transform: translateY(-2px); }
     .portfolio { min-height: 100vh; background: var(--paper); }
-    .topbar { height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 0 clamp(22px, 5vw, 76px); border-bottom: 1px solid var(--line); background: rgba(255,255,255,.85); }
+    .topbar { height: 76px; display: flex; align-items: center; justify-content: flex-start; gap: 24px; padding: 0 clamp(22px, 5vw, 76px); border-bottom: 1px solid var(--line); background: rgba(255,255,255,.85); }
     .brand { display: flex; align-items: center; gap: 11px; color: var(--ink); text-decoration: none; font-size: .9rem; font-weight: 750; letter-spacing: -.02em; }
     .brand-mark { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; background: var(--green); color: white; font-family: Georgia, serif; font-size: 1.05rem; }
-    .nav { display: flex; gap: 27px; }
-    .nav a { color: var(--muted); font-size: .83rem; text-decoration: none; }
-    .nav a:hover { color: var(--green); }
     .hero { position: relative; overflow: hidden; display: grid; grid-template-columns: 1.2fr .8fr; align-items: center; gap: 48px; padding: 80px clamp(22px, 8vw, 128px) 74px; color: #f3f7f3; background: var(--navy); }
     .hero::after { position: absolute; top: -190px; right: -140px; width: 540px; height: 540px; border: 1px solid rgba(129,191,158,.16); border-radius: 50%; box-shadow: 0 0 0 52px rgba(129,191,158,.035), 0 0 0 104px rgba(129,191,158,.025); content: ""; pointer-events: none; }
     .hero-copy, .hero-panel { position: relative; z-index: 1; }
@@ -65,17 +62,32 @@
     .hero-lede { max-width: 520px; margin: 25px 0 0; color: #b9c5bf; font-size: clamp(1rem, 1.5vw, 1.15rem); line-height: 1.75; }
     .badge-row { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 29px; }
     .badge { padding: 8px 12px; border: 1px solid rgba(197,220,204,.18); border-radius: 40px; color: #d7e4db; font-size: .74rem; }
-    .hero-panel { min-height: 280px; padding: 23px 22px 17px; border: 1px solid rgba(195,219,202,.18); border-radius: 7px; background: linear-gradient(145deg, rgba(255,255,255,.055), rgba(255,255,255,.015)); box-shadow: 0 24px 70px rgba(0,0,0,.17); }
+    .hero-panel { min-height: 370px; padding: 23px 22px 17px; border: 1px solid rgba(195,219,202,.18); border-radius: 7px; background: linear-gradient(145deg, rgba(255,255,255,.055), rgba(255,255,255,.015)); box-shadow: 0 24px 70px rgba(0,0,0,.17); }
     .panel-top { display: flex; justify-content: space-between; gap: 15px; color: #c0cbc4; font-size: .73rem; }
     .live { display: inline-flex; align-items: center; gap: 7px; color: #8fd0a5; }
     .live::before { width: 6px; height: 6px; border-radius: 50%; background: #50be7e; content: ""; box-shadow: 0 0 10px #50be7e; }
-    .chart-title { margin: 33px 0 3px; color: #f3f7f3; font-family: Georgia, serif; font-size: 1.6rem; }
+    .chart-title { margin: 24px 0 3px; color: #f3f7f3; font-family: Georgia, serif; font-size: 1.6rem; }
     .chart-subtitle { color: #87948c; font-size: .73rem; }
-    .chart { width: 100%; height: 112px; margin-top: 9px; overflow: visible; }
+    .chart { width: 100%; height: 130px; margin-top: 5px; overflow: visible; }
     .chart-grid { stroke: rgba(255,255,255,.1); stroke-dasharray: 3 5; }
-    .chart-fill { fill: url(#fade); }
-    .chart-line { fill: none; stroke: #73ca91; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2.8; }
-    .chart-foot { display: flex; justify-content: space-between; color: #839089; font-size: .66rem; }
+    .chart-zero { stroke: rgba(224,238,227,.52); stroke-width: 1.2; }
+    .axis-label, .plot-note { fill: #839089; font-size: 9px; font-family: inherit; }
+    .plot-note { opacity: 0; font-size: 8px; font-weight: 700; letter-spacing: .08em; transition: opacity .2s; }
+    .chart-line { fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-width: 3; stroke-dasharray: 1; stroke-dashoffset: 1; opacity: 0; transition: stroke-dashoffset 1.3s cubic-bezier(.2,.8,.2,1), opacity .2s; }
+    .line-start { stroke: #73ca91; stroke-dashoffset: 0; opacity: .75; }
+    .line-aron { stroke: #7ce1a0; }
+    .line-other { stroke: #ff8174; }
+    .note-aron { fill: #8fe7a9; }
+    .note-other { fill: #ffaaa0; }
+    .hero-panel[data-choice="aron"] .line-start, .hero-panel[data-choice="other"] .line-start { opacity: 0; stroke-dashoffset: 1; }
+    .hero-panel[data-choice="aron"] .line-aron, .hero-panel[data-choice="other"] .line-other { opacity: 1; stroke-dashoffset: 0; }
+    .hero-panel[data-choice="aron"] .note-aron, .hero-panel[data-choice="other"] .note-other { opacity: 1; }
+    .choice-row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 12px; }
+    .choice-button { min-height: 38px; padding: 8px 11px; border: 1px solid rgba(195,219,202,.22); border-radius: 4px; background: rgba(255,255,255,.04); color: #d7e4db; font-size: .75rem; font-weight: 700; transition: .18s; }
+    .choice-button:hover, .choice-button[aria-pressed="true"] { border-color: #70cb90; background: rgba(112,203,144,.13); color: #a8e4b9; }
+    .choice-button[data-choice-button="other"][aria-pressed="true"] { border-color: #ff8174; background: rgba(255,129,116,.12); color: #ffaaa0; }
+    .choice-button:focus-visible { outline: 3px solid #f5b700; outline-offset: 3px; }
+    .chart-result { min-height: 1.3em; margin: 8px 0 0; color: #aebbb2; font-size: .68rem; }
     .section { padding: 74px clamp(22px, 8vw, 128px); }
     .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 25px; margin-bottom: 27px; }
     .section-kicker { margin: 0 0 10px; color: var(--green); font-size: .69rem; font-weight: 800; letter-spacing: .19em; text-transform: uppercase; }
@@ -110,8 +122,6 @@
     @media (max-width: 580px) {
       .bruh { min-width: 78vw; min-height: 25vh; }
       .topbar { height: 66px; }
-      .nav { gap: 14px; }
-      .nav a { font-size: .72rem; }
       .hero { padding-top: 52px; padding-bottom: 52px; }
       .section { padding-top: 54px; padding-bottom: 54px; }
       .section-heading { align-items: flex-start; flex-direction: column; }
@@ -149,11 +159,6 @@
     <article class="portfolio" id="portfolio" hidden>
       <header class="topbar">
         <a class="brand" href="#top" aria-label="Aron Süssmann, til toppen"><span class="brand-mark">A</span><span>ARON SÜSSMANN</span></a>
-        <nav class="nav" aria-label="Hovedmeny">
-          <a href="#overblikk">Overblikk</a>
-          <a href="#erfaring">Erfaring</a>
-          <a href="#om">Om Aron</a>
-        </nav>
       </header>
 
       <section class="hero" id="top">
@@ -161,19 +166,27 @@
           <p class="eyebrow">Økonomi · strategi · styrearbeid</p>
           <h1>Gode beslutninger.<br><em>Enda bedre historier.</em></h1>
           <p class="hero-lede">En personlig portefølje med blikk for økonomi, initiativ og folkene bak tallene. Med en liten dose selvironi i margen.</p>
-          <div class="badge-row"><span class="badge">Styrearbeid</span><span class="badge">Økonomiinteresse</span><span class="badge">Styrearbeid</span></div>
+          <div class="badge-row"><span class="badge">Styrearbeid</span><span class="badge">Økonomiinteresse</span><span class="badge">Strategi</span></div>
         </div>
-        <div class="hero-panel" aria-label="Illustrert markedsoversikt">
-          <div class="panel-top"><span>PORTEFØLJEBLIKK</span><span class="live">STABILT HUMØR</span></div>
-          <p class="chart-title">Langsiktig perspektiv</p>
-          <span class="chart-subtitle">Illustrasjon · ingen faktisk avkastningshistorikk</span>
-          <svg class="chart" viewBox="0 0 480 112" role="img" aria-label="Dekorativ illustrasjon av en stigende kurve">
-            <defs><linearGradient id="fade" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#64c586" stop-opacity=".23"/><stop offset="1" stop-color="#64c586" stop-opacity="0"/></linearGradient></defs>
-            <path class="chart-grid" d="M0 23H480M0 57H480M0 91H480"/>
-            <path class="chart-fill" d="M0 91 C28 88 34 70 64 76 S103 91 127 62 S168 72 193 51 S232 58 257 41 S296 52 321 38 S359 48 381 23 S420 38 444 16 S466 23 480 8 V112 H0Z"/>
-            <path class="chart-line" d="M0 91 C28 88 34 70 64 76 S103 91 127 62 S168 72 193 51 S232 58 257 41 S296 52 321 38 S359 48 381 23 S420 38 444 16 S466 23 480 8"/>
+        <div class="hero-panel" id="economy-chart" aria-label="Tøysete økonomisjef-simulator">
+          <div class="panel-top"><span>ØKONOMISJEF-SIMULATOR</span><span class="live">AVHENGER AV VALG</span></div>
+          <p class="chart-title">Hvem får toppjobben?</p>
+          <span class="chart-subtitle">Vitenskapelig metode: fullstendig useriøs</span>
+          <svg class="chart" viewBox="0 0 480 148" role="img" aria-label="Velg en kandidat for å se en tøysete graf">
+            <path class="chart-grid" d="M40 28H472M40 54H472M40 112H472M40 138H472"/>
+            <path class="chart-zero" d="M40 84H472"/>
+            <text class="axis-label" x="13" y="31">+</text><text class="axis-label" x="13" y="87">0</text><text class="axis-label" x="13" y="141">−</text>
+            <path class="chart-line line-start" pathLength="1" d="M42 101 C83 97 98 88 130 91 S180 78 214 76 S263 65 300 67 S350 50 382 51 S430 31 470 24"/>
+            <path class="chart-line line-aron" pathLength="1" d="M42 84 H308 C352 84 369 79 384 61 L398 31 L406 0"/>
+            <path class="chart-line line-other" pathLength="1" d="M42 84 H168 C216 84 240 92 273 104 S324 122 341 147 L350 166"/>
+            <text class="plot-note note-aron" x="330" y="18" fill="#8fe7a9">UT AV DIAGRAMMET ↑</text>
+            <text class="plot-note note-other" x="262" y="137" fill="#ffaaa0">BUDSJETTET: AU</text>
           </svg>
-          <div class="chart-foot"><span>STARTER MED EN IDÉ</span><span>FORTSETTER MED FOLK</span></div>
+          <div class="choice-row" role="group" aria-label="Velg økonomisjef">
+            <button class="choice-button" type="button" data-choice-button="aron" aria-pressed="false">Velg Aron 🚀</button>
+            <button class="choice-button" type="button" data-choice-button="other" aria-pressed="false">Velg noen andre</button>
+          </div>
+          <p class="chart-result" id="chart-result" aria-live="polite">Velg kandidat og følg utviklingen.</p>
         </div>
       </section>
 
@@ -239,6 +252,23 @@
       history.replaceState(null, '', location.pathname + location.search + '#portfolio');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }, { once: true });
+    const economyChart = document.getElementById('economy-chart');
+    const chartResult = document.getElementById('chart-result');
+    document.querySelectorAll('[data-choice-button]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const choice = button.dataset.choiceButton;
+        economyChart.dataset.choice = choice;
+        document.querySelectorAll('[data-choice-button]').forEach((candidate) => {
+          candidate.setAttribute('aria-pressed', String(candidate === button));
+        });
+        economyChart.querySelector('.chart').setAttribute('aria-label', choice === 'aron'
+          ? 'Når Aron velges, skyter grafen rett opp og ut av diagrammet.'
+          : 'Når noen andre velges, stuper grafen under null.');
+        chartResult.textContent = choice === 'aron'
+          ? 'Aron valgt: kurven har forlatt både skjermen og regnearket.'
+          : 'Noen andre valgt: budsjettet har oppdaget minus-tegnet.';
+      });
+    });
   </script>
 </body>
 </html>

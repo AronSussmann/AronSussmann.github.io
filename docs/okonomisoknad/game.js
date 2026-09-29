@@ -1,358 +1,692 @@
 (() => {
   "use strict";
-
   const canvas = document.getElementById("kirkenes-game");
   if (!canvas) return;
-
-  const context = canvas.getContext("2d", { alpha: false });
-  const width = canvas.width;
-  const height = canvas.height;
-  const ground = 420;
-  const worldWidth = 1620;
-  const spriteSize = 264;
-  const background = new Image();
-  const rider = new Image();
-  background.src = "assets/kirkenes-snow.png";
-  rider.src = "assets/tobias-rein.png";
-  context.imageSmoothingEnabled = false;
-
-  const overlay = document.getElementById("game-overlay");
   const portfolio = document.getElementById("portfolio");
+  const ctx = canvas.getContext("2d", { alpha: false });
+  const W = canvas.width, H = canvas.height, HORIZON = 236, WORLD_END = 2760, GOAL_X = WORLD_END - 176;
+  const LOW_Z = 0.035, HIGH_Z = 0.965;
+  const scriptBase = new URL("assets/", document.currentScript.src);
+  const makeImage = (name) => { const image = new Image(); image.src = new URL(name, scriptBase).href; return image; };
+  const art = {
+    town: makeImage("kirkenes-snow.png"),
+    tobias: makeImage("tobias-brawler.png"),
+    rotor: makeImage("vindmolle-brawler.png"),
+    reindeer: makeImage("rein-npc.png")
+  };
+  const overlay = document.getElementById("game-overlay");
   const overlayKicker = document.getElementById("game-overlay-kicker");
   const overlayTitle = document.getElementById("game-overlay-title");
   const overlayText = document.getElementById("game-overlay-text");
   const overlayButton = document.getElementById("game-overlay-button");
-  const livesDisplay = document.getElementById("reindeer-lives");
-  const scoreDisplay = document.getElementById("windmill-score");
+  const livesText = document.getElementById("player-lives");
+  const comboText = document.getElementById("combo-readout");
+  const scoreText = document.getElementById("score-readout");
+  const bossReadout = document.getElementById("boss-readout");
+  const soundButton = document.getElementById("sound-toggle");
 
-  const input = { left: false, right: false };
-  let projectiles = [];
-  let windmills = [];
-  let player;
-  let cameraX = 0;
-  let elapsed = 0;
-  let running = false;
-  let lives = 3;
-  let defeated = 0;
-  let lastFrame = performance.now();
+  const held = { left: false, right: false, up: false, down: false, block: false };
+  const wavePlans = {
+    1: [{ type: "runner", offset: 0, z: 0.38 }, { type: "drifter", offset: 128, z: 0.70 }],
+    2: [{ type: "drifter", offset: 0, z: 0.30 }, { type: "runner", offset: 142, z: 0.62 }, { type: "brute", offset: 278, z: 0.46 }],
+    3: [{ type: "brute", offset: 0, z: 0.66 }, { type: "runner", offset: 158, z: 0.35 }, { type: "brute", offset: 306, z: 0.52 }],
+    4: [{ type: "boss", offset: 0, z: 0.53 }]
+  };
+  const enemyStats = {
+    runner: { hp: 2, speed: 108, damage: 1, label: "ROTOR-RUSHER", scale: 0.93, windup: 0.50, range: 105, score: 120 },
+    drifter: { hp: 3, speed: 68, damage: 1, label: "VINDMØLLEFOLK", scale: 1, windup: 0.64, range: 110, score: 170 },
+    brute: { hp: 6, speed: 47, damage: 1, label: "SNØBRØYTER", scale: 1.15, windup: 0.80, range: 125, score: 300 },
+    boss: { hp: 20, speed: 67, damage: 2, label: "VINDKONGEN", scale: 1.48, windup: 0.95, range: 178, score: 1500 }
+  };
 
-  function resetWindmills() {
-    return [
-      { x: 500, hp: 2, damageDone: false, destroyed: false },
-      { x: 760, hp: 2, damageDone: false, destroyed: false },
-      { x: 1030, hp: 2, damageDone: false, destroyed: false },
-      { x: 1320, hp: 2, damageDone: false, destroyed: false },
-    ];
+  let state = "ready", player, enemies = [], particles = [], floaters = [], pickups = [];
+  let cameraX = 0, gateX = 405, currentWave = 1, allCleared = false, score = 0;
+  let bestScore = readBest(), gameTime = 0, lastFrame = performance.now();
+  let hitStop = 0, shake = 0, flash = 0, stageNotice = { text: "", timer: 0 };
+  let bufferedAttack = null, attackBufferTimer = 0;
+  let soundOn = true, audioContext = null;
+  const weather = [];
+  for (let i = 0; i < 68; i += 1) weather.push({ x: (i * 137) % W, y: (i * 79) % H, speed: 25 + (i % 7) * 9, drift: (i % 2 ? 1 : -1) * (5 + i % 6), size: i % 8 === 0 ? 3 : 2 });
+
+  function readBest() {
+    try { return Number(localStorage.getItem("kirkenes-beat-em-up-best") || 0); } catch (_) { return 0; }
   }
-
-  function updateHud() {
-    livesDisplay.textContent = `${"♥ ".repeat(lives)}${"♡ ".repeat(3 - lives)}`.trim();
-    scoreDisplay.textContent = `${defeated} / ${windmills.length}`;
+  function saveBest() {
+    try {
+      if (score > bestScore) {
+        bestScore = score;
+        localStorage.setItem("kirkenes-beat-em-up-best", String(bestScore));
+      }
+    } catch (_) {}
   }
+  function zToY(z) { return HORIZON + 18 + z * (H - HORIZON - 25); }
+  function scaleAt(z) { return 0.70 + z * 0.48; }
+  function screenX(worldX) { return worldX - cameraX; }
 
-  function startGame() {
-    player = {
-      x: 155,
-      jumpHeight: 0,
-      jumpVelocity: 0,
-      facing: 1,
-      throwCooldown: 0,
-      hurtTimer: 0,
-      stride: 0,
-    };
-    cameraX = 0;
-    projectiles = [];
-    windmills = resetWindmills();
-    lives = 3;
-    defeated = 0;
-    running = true;
-    input.left = false;
-    input.right = false;
-    overlay.hidden = true;
-    updateHud();
-    canvas.focus({ preventScroll: true });
+  function createEnemy(type, x, z) {
+    const stats = enemyStats[type];
+    return { type, x, z, hp: stats.hp, maxHp: stats.hp, speed: stats.speed, damage: stats.damage,
+      scale: stats.scale, windup: stats.windup, range: stats.range, label: stats.label, reward: stats.score,
+      face: -1, mode: "idle", timer: 0, attackFlash: 0, hurt: 0, knockback: 0, dead: false,
+      removeTimer: 0, attackSerial: 0 };
   }
-
-  function finishGame(won) {
-    if (!running) return;
-    running = false;
-    input.left = false;
-    input.right = false;
+  function spawnWave(number, firstX) {
+    currentWave = number;
+    const plan = wavePlans[number], startX = firstX === undefined ? 520 : firstX;
+    enemies = plan.map((spec) => createEnemy(spec.type, startX + spec.offset, spec.z));
+    const farthestEnemyX = startX + Math.max(...plan.map((spec) => spec.offset));
+    gateX = Math.max(player.x + 92, farthestEnemyX - 285);
+    notice(number === 4 ? "BOSS: VINDKONGEN" : "BØLGE " + number + " / 4", 2.25);
+    updateReadouts();
+  }
+  function resetGame() {
+    player = { x: 144, z: 0.56, face: 1, hp: 10, maxHp: 10, special: 20, attack: null, comboStage: 0,
+      comboCount: 0, comboTimer: 0, invulnerable: 2.50, hurt: 0, stun: 0, dashTimer: 0, dashCooldown: 0,
+      parry: 0, blocking: false, blockWasDown: false, step: 0, attackFlash: 0 };
+    enemies = []; particles = []; floaters = []; pickups = []; cameraX = 0; score = 0;
+    currentWave = 1; allCleared = false; hitStop = 0; shake = 0; flash = 0; stageNotice = { text: "", timer: 0 };
+    bufferedAttack = null; attackBufferTimer = 0;
+    spawnWave(1, 500);
+    state = "running"; overlay.hidden = true; clearHeld(); updateReadouts(); canvas.focus({ preventScroll: true });
+    initSound(); playTone(440, 0.09, "triangle", 0.035); playTone(660, 0.12, "triangle", 0.025, 0.07);
+  }
+  function showOverlay(mode) {
     overlay.hidden = false;
-    overlayKicker.textContent = won ? "KIRKENES · NIVÅ FULLFØRT" : "KIRKENES · GAME OVER";
-    overlayTitle.textContent = won ? "Vindmøllene er nede!" : lives === 0 ? "Vindmølla tok reinen." : "Oppdraget er ikke ferdig.";
-    overlayText.textContent = won
-      ? "Tobias og reinen reddet Kirkenes. Budsjettet kan puste ut."
-      : lives === 0
-        ? "Ingen dramatikk vist — bare et spill over. Hopp over bladene, og kast snøballer før du prøver igjen."
-        : `Du kom deg gjennom, men ${windmills.length - defeated} vindmølle(r) står fortsatt. Ta en ny runde!`;
-    overlayButton.textContent = "Spill igjen";
+    if (mode === "paused") {
+      overlayKicker.textContent = "PAUSE · KIRKENES"; overlayTitle.textContent = "Pust ut. Hold garden.";
+      overlayText.textContent = "Trykk P eller fortsett-knappen når du er klar."; overlayButton.textContent = "Fortsett";
+    } else if (mode === "won") {
+      overlayKicker.textContent = "OPPDRAG FULLFØRT"; overlayTitle.textContent = "Reinen er trygg.";
+      overlayText.textContent = "Vindkongen er slått ut. Du fikk " + score + " poeng" + (score >= bestScore ? " og ny rekord!" : ".") + " Vil du ta en runde til?";
+      overlayButton.textContent = "Spill igjen";
+    } else if (mode === "lost") {
+      overlayKicker.textContent = "GAME OVER"; overlayTitle.textContent = "Vindmøllefolket vant runden.";
+      overlayText.textContent = "Prøv å blokkere idet angrepsvarselet blinker, og dash til en bedre posisjon.";
+      overlayButton.textContent = "Prøv igjen";
+    }
+  }
+  function pauseGame() {
+    if (state === "running") { state = "paused"; clearHeld(); showOverlay("paused"); }
+    else if (state === "paused") { state = "running"; overlay.hidden = true; canvas.focus({ preventScroll: true }); }
+  }
+  function finishGame(won) {
+    if (state !== "running") return;
+    state = won ? "won" : "lost"; clearHeld();
+    if (won) {
+      score += 1000; createBurst(GOAL_X, player.z, 34, ["#fff4a7", "#ffcf67", "#b8ffd1", "#ffffff"]);
+      showFloater("KIRKENES REDDET!", GOAL_X, player.z, "#b7ffc9", 20); shake = Math.max(shake, 9);
+      playTone(520, 0.18, "triangle", 0.045); playTone(780, 0.20, "triangle", 0.035, 0.14); playTone(1040, 0.24, "triangle", 0.03, 0.30);
+    }
+    saveBest(); updateReadouts(); showOverlay(state);
+  }
+  function notice(text, duration) { stageNotice.text = text; stageNotice.timer = duration; }
+  function updateReadouts() {
+    if (!player) return;
+    livesText.textContent = player.hp + " / " + player.maxHp;
+    comboText.textContent = player.comboCount > 1 ? "x" + player.comboCount : "—";
+    scoreText.textContent = String(score);
+    const boss = enemies.find((enemy) => enemy.type === "boss" && !enemy.dead);
+    bossReadout.hidden = !boss;
+    if (boss) bossReadout.querySelector("strong").textContent = boss.hp + " / " + boss.maxHp;
+  }
+  function initSound() {
+    if (!soundOn || audioContext) return;
+    const AudioCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtor) return;
+    try { audioContext = new AudioCtor(); } catch (_) { audioContext = null; }
+  }
+  function playTone(frequency, duration, type, volume, delay) {
+    if (!soundOn) return;
+    initSound();
+    if (!audioContext) return;
+    const start = audioContext.currentTime + (delay || 0), oscillator = audioContext.createOscillator(), gain = audioContext.createGain();
+    oscillator.type = type || "square"; oscillator.frequency.setValueAtTime(frequency, start);
+    gain.gain.setValueAtTime(volume || 0.02, start); gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
+    oscillator.connect(gain); gain.connect(audioContext.destination); oscillator.start(start); oscillator.stop(start + duration);
+  }
+  function sfx(name) {
+    if (name === "punch") playTone(185, 0.08, "square", 0.022);
+    if (name === "kick") playTone(118, 0.12, "sawtooth", 0.023);
+    if (name === "hit") { playTone(330, 0.055, "square", 0.03); playTone(205, 0.10, "triangle", 0.025, 0.035); }
+    if (name === "parry") { playTone(760, 0.10, "triangle", 0.038); playTone(1040, 0.14, "triangle", 0.03, 0.07); }
+    if (name === "dash") playTone(280, 0.10, "sawtooth", 0.017);
+    if (name === "special") { playTone(120, 0.24, "sawtooth", 0.035); playTone(560, 0.22, "triangle", 0.025, 0.07); }
+    if (name === "ko") playTone(86, 0.22, "square", 0.025);
+    if (name === "pickup") playTone(680, 0.10, "sine", 0.025);
+  }
+  function clearHeld() {
+    held.left = held.right = held.up = held.down = held.block = false;
+    if (player) { player.blocking = false; player.blockWasDown = false; }
   }
 
-  function jump() {
-    if (!running || player.jumpHeight > 0) return;
-    player.jumpVelocity = 485;
-  }
-
-  function throwSnowball() {
-    if (!running || player.throwCooldown > 0) return;
-    player.throwCooldown = 0.38;
-    projectiles.push({
-      x: player.x + player.facing * 78,
-      y: ground - 130 - player.jumpHeight,
-      vx: player.facing * 520,
-    });
-  }
-
-  function update(delta) {
-    elapsed += delta;
-    if (!running) return;
-
-    const direction = Number(input.right) - Number(input.left);
-    if (direction !== 0) {
-      player.facing = direction;
-      player.x += direction * 220 * delta;
-      player.stride += delta * 12;
+  function requestAttack(kind) {
+    if (state !== "running" || player.dashTimer > 0) return;
+    if (kind === "special" && player.special < 45) {
+      notice("SPESIALMÅLEREN ER IKKE FULL", 0.9); playTone(150, 0.06, "square", 0.012); return;
     }
-    player.x = Math.max(115, Math.min(worldWidth - 75, player.x));
-    player.jumpHeight += player.jumpVelocity * delta;
-    if (player.jumpHeight > 0 || player.jumpVelocity > 0) {
-      player.jumpVelocity -= 1120 * delta;
-      if (player.jumpHeight <= 0) {
-        player.jumpHeight = 0;
-        player.jumpVelocity = 0;
-      }
+    const targetDepth = kind === "special" ? 0.30 : kind === "kick" ? 0.22 : 0.20;
+    const targetRange = kind === "special" ? 250 : kind === "kick" ? 190 : 170;
+    const target = enemies.filter((enemy) => !enemy.dead && Math.abs(enemy.z - player.z) <= targetDepth && Math.abs(enemy.x - player.x) <= targetRange)
+      .sort((a, b) => Math.abs(a.x - player.x) - Math.abs(b.x - player.x))[0];
+    if (target && Math.abs(target.x - player.x) > 4) player.face = target.x > player.x ? 1 : -1;
+    if (player.stun > 0) { bufferedAttack = kind; attackBufferTimer = 0.42; return; }
+    if (kind === "special") {
+      player.special -= 45;
+      player.attack = { kind: "special", time: 0, windup: 0.16, activeEnd: 0.54, duration: 0.76, damage: 5, range: 236, depth: 0.30, knockback: 240, hit: new Set(), sequence: 0 };
+      player.comboStage = 0; player.attackFlash = 0.55; sfx("special"); shake = Math.max(shake, 6); flash = Math.max(flash, 0.15); return;
     }
-    player.throwCooldown = Math.max(0, player.throwCooldown - delta);
-    player.hurtTimer = Math.max(0, player.hurtTimer - delta);
-
-    const cameraTarget = Math.max(0, Math.min(worldWidth - width, player.x - width * 0.3));
-    cameraX += (cameraTarget - cameraX) * Math.min(1, delta * 5);
-
-    for (const windmill of windmills) {
-      if (windmill.destroyed) continue;
-      if (Math.abs(player.x - windmill.x) < 80 && player.jumpHeight < 60 && !windmill.damageDone && player.hurtTimer <= 0) {
-        windmill.damageDone = true;
-        player.hurtTimer = 1.15;
-        lives = Math.max(0, lives - 1);
-        updateHud();
-        if (lives === 0) finishGame(false);
-      }
-    }
-
-    for (let index = projectiles.length - 1; index >= 0; index -= 1) {
-      const snowball = projectiles[index];
-      snowball.x += snowball.vx * delta;
-      const target = windmills.find((windmill) => !windmill.destroyed && Math.abs(snowball.x - windmill.x) < 34 && Math.abs(snowball.y - (ground - 116)) < 105);
-      if (target) {
-        target.hp -= 1;
-        projectiles.splice(index, 1);
-        if (target.hp <= 0) {
-          target.destroyed = true;
-          defeated += 1;
-          updateHud();
-        }
-      } else if (snowball.x < cameraX - 30 || snowball.x > cameraX + width + 70) {
-        projectiles.splice(index, 1);
-      }
-    }
-
-    if (player.x >= worldWidth - 105) finishGame(defeated === windmills.length);
-  }
-
-  function drawBackground() {
-    context.fillStyle = "#8db4e8";
-    context.fillRect(0, 0, width, height);
-    if (background.complete && background.naturalWidth > 0) {
-      context.drawImage(background, -Math.round(cameraX), 0, worldWidth, height);
+    const previous = player.attack;
+    if (previous && previous.time < previous.duration - 0.13) { bufferedAttack = kind; attackBufferTimer = 0.42; return; }
+    bufferedAttack = null; attackBufferTimer = 0;
+    if (kind === "punch") {
+      player.comboStage = player.comboTimer > 0 ? (player.comboStage % 3) + 1 : 1;
+      player.comboTimer = 0.72;
+      const stage = player.comboStage;
+      player.attack = { kind: "punch", time: 0, windup: stage === 3 ? 0.12 : 0.085,
+        activeEnd: stage === 3 ? 0.28 : 0.22, duration: stage === 3 ? 0.49 : 0.37,
+        damage: stage === 3 ? 2 : 1, range: stage === 3 ? 142 : 121, depth: 0.18,
+        knockback: stage === 3 ? 250 : 150, hit: new Set(), sequence: stage };
+      sfx("punch");
     } else {
-      context.fillStyle = "#f2f7fb";
-      context.fillRect(0, ground - 65, width, height - ground + 65);
-    }
-
-    context.fillStyle = "#eff7fd";
-    context.fillRect(0, ground, width, height - ground);
-    context.fillStyle = "#c8dded";
-    context.fillRect(0, ground, width, 5);
-    context.fillStyle = "#f9fcff";
-    for (let index = 0; index < 22; index += 1) {
-      const x = ((index * 91 - cameraX * 0.65) % (width + 28) + (width + 28)) % (width + 28) - 14;
-      const y = ground + 12 + (index * 37) % 96;
-      context.fillRect(Math.round(x), y, 8 + (index % 3) * 3, 3);
-    }
-
-    context.fillStyle = "rgba(255,255,255,.82)";
-    for (let index = 0; index < 52; index += 1) {
-      const x = (index * 197 + elapsed * (8 + index % 5) * 9) % width;
-      const y = (index * 83 + elapsed * (10 + index % 3) * 7) % (ground - 30);
-      context.fillRect(Math.round(x), Math.round(y), index % 7 === 0 ? 3 : 2, index % 7 === 0 ? 3 : 2);
+      player.comboStage = 0; player.comboTimer = 0;
+      player.attack = { kind: "kick", time: 0, windup: 0.14, activeEnd: 0.34, duration: 0.53,
+        damage: 2, range: 164, depth: 0.20, knockback: 290, hit: new Set(), sequence: 0 };
+      sfx("kick");
     }
   }
-
-  function drawWindmill(windmill) {
-    const x = Math.round(windmill.x - cameraX);
-    if (x < -100 || x > width + 100) return;
-    if (windmill.destroyed) {
-      context.fillStyle = "#d8e7ee";
-      context.fillRect(x - 17, ground - 11, 34, 11);
-      for (let star = 0; star < 4; star += 1) {
-        const starX = x - 22 + ((star * 17 + Math.floor(elapsed * 18)) % 47);
-        const starY = ground - 24 - ((star * 13 + Math.floor(elapsed * 14)) % 24);
-        context.fillStyle = star % 2 ? "#ffd466" : "#8be3a8";
-        context.fillRect(starX, starY, 5, 5);
-      }
+  function dash() {
+    if (state !== "running" || player.dashCooldown > 0 || player.stun > 0) return;
+    player.dashTimer = 0.22; player.dashCooldown = 0.72; player.invulnerable = Math.max(player.invulnerable, 0.25);
+    if (!held.left && !held.right && !held.up && !held.down) player.x += player.face * 90;
+    sfx("dash");
+  }
+  function nudge(direction) {
+    if (state !== "running" || !player) return;
+    if (direction === "left") player.x -= 12;
+    if (direction === "right") player.x += 12;
+    if (direction === "up") player.z -= 0.016;
+    if (direction === "down") player.z += 0.016;
+    player.x = Math.max(66, Math.min(gateX, player.x));
+    player.z = Math.max(LOW_Z, Math.min(HIGH_Z, player.z));
+  }
+  function spawnWaveAfterClear() {
+    if (enemies.some((enemy) => !enemy.dead)) return;
+    if (currentWave >= 4) {
+      if (!allCleared) { allCleared = true; gateX = WORLD_END - 100; notice("BARRIEREN ER NEDE · REDD REINEN", 3); score += 600; updateReadouts(); }
       return;
     }
-
-    const hubY = ground - 116;
-    context.fillStyle = "#344c5e";
-    context.fillRect(x - 8, hubY + 7, 16, ground - hubY - 7);
-    context.fillStyle = "#6f8291";
-    context.fillRect(x - 5, hubY + 15, 5, ground - hubY - 15);
-    context.fillStyle = "#41586a";
-    context.fillRect(x - 19, ground - 9, 38, 9);
-
-    context.save();
-    context.translate(x, hubY);
-    context.rotate(elapsed * 1.8 + windmill.x * 0.015);
-    for (let blade = 0; blade < 4; blade += 1) {
-      context.rotate(Math.PI / 2);
-      context.fillStyle = "#314657";
-      context.fillRect(-5, -58, 10, 49);
-      context.fillStyle = "#d9e7ef";
-      context.fillRect(-11, -66, 22, 11);
-      context.fillStyle = "#b6cbd7";
-      context.fillRect(-6, -69, 12, 4);
+    const next = currentWave + 1;
+    if (player.hp < player.maxHp) {
+      player.hp = Math.min(player.maxHp, player.hp + 2);
+      showFloater("+2 LIV", player.x, player.z, "#c0ffc9", 14);
     }
-    context.restore();
-
-    context.fillStyle = "#e5b957";
-    context.fillRect(x - 8, hubY - 8, 16, 16);
-    context.fillStyle = "#fff0b6";
-    context.fillRect(x - 3, hubY - 3, 6, 6);
-    context.fillStyle = "rgba(17,31,40,.72)";
-    context.fillRect(x - 17, hubY - 87, 34, 6);
-    context.fillStyle = "#f47d71";
-    context.fillRect(x - 15, hubY - 85, 12 + (windmill.hp - 1) * 9, 2);
+    const base = Math.max(500 + (next - 1) * 215, player.x + 245);
+    spawnWave(next, Math.min(base, WORLD_END - 650));
   }
-
-  function drawPlayer() {
-    const screenX = Math.round(player.x - cameraX);
-    const bob = player.jumpHeight > 0 ? 0 : Math.round(Math.sin(player.stride || elapsed * 2) * (input.left || input.right ? 2 : 1));
-    const drawY = Math.round(ground - spriteSize + 24 - player.jumpHeight + bob);
-    const drawX = screenX - spriteSize / 2;
-    const flashing = player.hurtTimer > 0 && Math.floor(elapsed * 13) % 2 === 0;
-    context.save();
-    if (flashing) context.globalAlpha = 0.42;
-    if (rider.complete && rider.naturalWidth > 0) {
-      if (player.facing < 0) {
-        context.translate(screenX, 0);
-        context.scale(-1, 1);
-        context.drawImage(rider, -spriteSize / 2, drawY, spriteSize, spriteSize);
-      } else {
-        context.drawImage(rider, drawX, drawY, spriteSize, spriteSize);
+  function attackIsActive(attack) { return attack && attack.time >= attack.windup && attack.time <= attack.activeEnd; }
+  function applyPlayerHits() {
+    const attack = player.attack;
+    if (!attackIsActive(attack)) return;
+    for (const enemy of enemies) {
+      if (enemy.dead || attack.hit.has(enemy)) continue;
+      const dx = enemy.x - player.x, inFront = dx * player.face >= -22;
+      if (!inFront || Math.abs(dx) > attack.range * scaleAt(player.z) || Math.abs(enemy.z - player.z) > attack.depth) continue;
+      attack.hit.add(enemy); enemy.hp -= attack.damage; enemy.hurt = 0.28; enemy.mode = "stun"; enemy.timer = 0.34;
+      enemy.knockback = player.face * attack.knockback; enemy.face = dx >= 0 ? -1 : 1;
+      player.special = Math.min(100, player.special + (attack.kind === "special" ? 1 : attack.damage * 9));
+      player.comboCount += 1; player.comboTimer = 1.18;
+      score += 35 * attack.damage + Math.min(player.comboCount, 15) * 8;
+      const color = attack.kind === "special" ? "#ffe58a" : attack.kind === "kick" ? "#ffb18d" : "#f5ffff";
+      createBurst(enemy.x, enemy.z, attack.kind === "special" ? 14 : 8, [color, "#8eeeff", "#ffffff"]);
+      showFloater(attack.kind === "special" ? "WHAM!" : attack.damage > 1 ? "SMÆKK!" : "POW!", enemy.x, enemy.z, color, attack.kind === "special" ? 17 : 14);
+      hitStop = Math.max(hitStop, attack.damage > 1 ? 0.074 : 0.052); shake = Math.max(shake, attack.damage > 1 ? 6.5 : 4);
+      sfx("hit"); if (navigator.vibrate) navigator.vibrate(11);
+      if (enemy.hp <= 0) defeatEnemy(enemy);
+      updateReadouts();
+    }
+  }
+  function defeatEnemy(enemy) {
+    enemy.dead = true; enemy.mode = "down"; enemy.removeTimer = enemy.type === "boss" ? 1.3 : 0.84;
+    score += enemy.reward; createBurst(enemy.x, enemy.z, enemy.type === "boss" ? 32 : 17, ["#fff3a5", "#ff956d", "#8de6ff", "#ffffff"]);
+    showFloater(enemy.type === "boss" ? "BOSS NED!" : "UTSLÅTT", enemy.x, enemy.z, "#fff1a5", 17);
+    if (enemy.type === "boss") { shake = Math.max(shake, 12); flash = Math.max(flash, 0.25); }
+    if (enemy.type === "brute" || enemy.type === "boss" || Math.random() < 0.23)
+      pickups.push({ x: enemy.x, z: enemy.z, type: player.hp < player.maxHp ? "cocoa" : "charge", bob: Math.random() * 6, life: 12 });
+    sfx("ko");
+  }
+  function receiveEnemyHit(enemy, damage) {
+    if (player.invulnerable > 0) return;
+    if (player.parry > 0 && player.blocking) {
+      enemy.mode = "stun"; enemy.timer = 1.15; enemy.knockback = -enemy.face * 280; enemy.hp -= 1;
+      player.special = Math.min(100, player.special + 22); score += 180; player.comboCount += 1; player.comboTimer = 1.2;
+      createBurst(player.x, player.z, 17, ["#fff29a", "#a9f4ff", "#ffffff"]);
+      showFloater("PARRY!", player.x, player.z, "#fff08a", 21);
+      hitStop = 0.13; shake = Math.max(shake, 10); sfx("parry");
+      if (navigator.vibrate) navigator.vibrate(22);
+      if (enemy.hp <= 0) defeatEnemy(enemy);
+      updateReadouts(); return;
+    }
+    const blocked = player.blocking, actualDamage = blocked ? Math.max(0.5, damage * 0.32) : damage;
+    player.hp = Math.max(0, player.hp - actualDamage); player.invulnerable = blocked ? 0.72 : 1.42;
+    player.hurt = 0.48; player.stun = blocked ? 0.10 : 0.34; player.comboCount = 0; player.comboTimer = 0; player.attack = null;
+    player.x += enemy.face * (blocked ? -26 : -54); player.special = Math.min(100, player.special + (blocked ? 4 : 2));
+    createBurst(player.x, player.z, blocked ? 6 : 12, blocked ? ["#cbe8ff", "#ffffff"] : ["#ffb29a", "#ffffff", "#ffc85f"]);
+    showFloater(blocked ? "GUARD" : "OUCH!", player.x, player.z, blocked ? "#cbe8ff" : "#ffb29a", 14);
+    hitStop = blocked ? 0.035 : 0.085; shake = Math.max(shake, blocked ? 3.5 : 8); flash = Math.max(flash, blocked ? 0.04 : 0.16);
+    if (!blocked) sfx("hit");
+    if (navigator.vibrate) navigator.vibrate(blocked ? 8 : 18);
+    updateReadouts(); if (player.hp <= 0) finishGame(false);
+  }
+  function updateEnemies(dt) {
+    for (const enemy of enemies) {
+      if (enemy.dead) { enemy.removeTimer -= dt; continue; }
+      enemy.hurt = Math.max(0, enemy.hurt - dt); enemy.attackFlash = Math.max(0, enemy.attackFlash - dt);
+      const dx = player.x - enemy.x, dz = player.z - enemy.z, distance = Math.abs(dx);
+      enemy.face = dx < 0 ? -1 : 1;
+      if (enemy.mode === "stun") {
+        enemy.x += enemy.knockback * dt; enemy.knockback *= Math.exp(-9 * dt); enemy.timer -= dt;
+        if (enemy.timer <= 0) enemy.mode = "approach";
+        continue;
       }
+      if (distance > 350) { enemy.mode = "idle"; continue; }
+      if (enemy.mode === "tell") {
+        enemy.timer -= dt;
+        if (enemy.timer <= 0) {
+          const inRange = distance <= enemy.range * scaleAt(enemy.z) && Math.abs(dz) <= (enemy.type === "boss" ? 0.25 : 0.18);
+          if (inRange) receiveEnemyHit(enemy, enemy.damage);
+          enemy.mode = "recover"; enemy.timer = enemy.type === "boss" ? (enemy.hp < enemy.maxHp * 0.48 ? 0.70 : 1.12) : 0.96;
+          enemy.attackSerial += 1;
+        }
+        continue;
+      }
+      if (enemy.mode === "recover") { enemy.timer -= dt; if (enemy.timer <= 0) enemy.mode = "approach"; continue; }
+      const engageDistance = enemy.range * scaleAt(enemy.z) * 0.82;
+      if (distance < engageDistance && Math.abs(dz) < 0.19) {
+        enemy.mode = "tell";
+        enemy.timer = enemy.type === "boss" && enemy.hp < enemy.maxHp * 0.48 ? 0.58 : enemy.windup;
+        enemy.attackFlash = enemy.timer; continue;
+      }
+      enemy.mode = "approach";
+      const moveX = distance > engageDistance * 0.72 ? Math.sign(dx) : 0;
+      if (Math.abs(dz) > 0.09) enemy.z += Math.sign(dz) * Math.min(Math.abs(dz), (enemy.type === "boss" ? 0.38 : 0.46) * dt);
+      const enrage = enemy.type === "boss" && enemy.hp < enemy.maxHp * 0.48 ? 1.32 : 1;
+      enemy.x += moveX * enemy.speed * enrage * dt;
+      enemy.x = Math.max(66, Math.min(WORLD_END - 260, enemy.x));
+    }
+  }
+  function updatePickups(dt) {
+    for (let i = pickups.length - 1; i >= 0; i -= 1) {
+      const item = pickups[i]; item.bob += dt * 4; item.life -= dt;
+      if (Math.abs(item.x - player.x) < 48 && Math.abs(item.z - player.z) < 0.14) {
+        if (item.type === "cocoa") player.hp = Math.min(player.maxHp, player.hp + 1);
+        else player.special = Math.min(100, player.special + 28);
+        score += 100; createBurst(item.x, item.z, 10, ["#b7ffd0", "#fff2a4", "#ffffff"]);
+        showFloater(item.type === "cocoa" ? "+1 LIV" : "+SPESIAL", item.x, item.z, "#c0ffc9", 13);
+        sfx("pickup"); pickups.splice(i, 1); updateReadouts();
+      } else if (item.life <= 0) pickups.splice(i, 1);
+    }
+  }
+
+  function update(dt) {
+    if (state !== "running") return;
+    if (hitStop > 0) { hitStop = Math.max(0, hitStop - dt); return; }
+    gameTime += dt; stageNotice.timer = Math.max(0, stageNotice.timer - dt);
+    flash = Math.max(0, flash - dt * 1.9); shake = Math.max(0, shake - dt * 16);
+    player.invulnerable = Math.max(0, player.invulnerable - dt); player.hurt = Math.max(0, player.hurt - dt);
+    player.stun = Math.max(0, player.stun - dt); player.dashTimer = Math.max(0, player.dashTimer - dt);
+    player.dashCooldown = Math.max(0, player.dashCooldown - dt); player.parry = Math.max(0, player.parry - dt);
+    player.attackFlash = Math.max(0, player.attackFlash - dt); player.comboTimer = Math.max(0, player.comboTimer - dt);
+    attackBufferTimer = Math.max(0, attackBufferTimer - dt);
+    if (player.comboTimer <= 0) player.comboCount = 0;
+
+    const wantsBlock = held.block && player.stun <= 0 && player.dashTimer <= 0;
+    player.blocking = wantsBlock;
+    if (wantsBlock && !player.blockWasDown) { player.parry = 0.23; playTone(390, 0.045, "triangle", 0.012); }
+    player.blockWasDown = wantsBlock;
+    if (player.attack) { player.attack.time += dt; if (player.attack.time > player.attack.duration) player.attack = null; }
+
+    if (player.stun <= 0) {
+      let ax = Number(held.right) - Number(held.left), az = Number(held.down) - Number(held.up);
+      const length = Math.hypot(ax, az) || 1; ax /= length; az /= length;
+      if (ax !== 0) player.face = ax > 0 ? 1 : -1;
+      if (player.dashTimer > 0) {
+        if (ax === 0 && az === 0) ax = player.face;
+        player.x += ax * 560 * dt; player.z += az * 0.72 * dt;
+      } else if (player.blocking) {
+        player.x += ax * 76 * dt; player.z += az * 0.24 * dt;
+      } else if (!player.attack || player.attack.time < player.attack.windup) {
+        player.x += ax * 235 * dt; player.z += az * 0.58 * dt;
+      } else {
+        player.x += ax * 82 * dt; player.z += az * 0.22 * dt;
+      }
+      if (ax !== 0 || az !== 0) player.step += dt * (player.dashTimer > 0 ? 22 : 11);
+    }
+    player.x = Math.max(66, Math.min(WORLD_END - 75, Math.min(gateX, player.x)));
+    player.z = Math.max(LOW_Z, Math.min(HIGH_Z, player.z));
+    if (player.x >= gateX - 2 && !allCleared && stageNotice.timer <= 0.15) notice("RYDD BØLGEN FOR Å KOMME VIDERE", 0.6);
+
+    applyPlayerHits(); updateEnemies(dt); updatePickups(dt); spawnWaveAfterClear();
+    if (bufferedAttack && attackBufferTimer > 0 && player.stun <= 0 && player.dashTimer <= 0 && (!player.attack || player.attack.time >= player.attack.duration - 0.13)) {
+      const nextAttack = bufferedAttack; bufferedAttack = null; requestAttack(nextAttack);
+    }
+    if (attackBufferTimer <= 0) bufferedAttack = null;
+    for (const p of particles) { p.x += p.vx * dt; p.z += p.vz * dt; p.lift += p.vy * dt; p.vy -= p.gravity * dt; p.life -= dt; }
+    particles = particles.filter((p) => p.life > 0);
+    for (const f of floaters) { f.lift += f.speed * dt; f.life -= dt; }
+    floaters = floaters.filter((f) => f.life > 0);
+    for (const flake of weather) {
+      flake.x += flake.drift * dt; flake.y += flake.speed * dt;
+      if (flake.y > H) { flake.y = -5; flake.x = (flake.x + 113) % W; }
+      if (flake.x < -4) flake.x = W + 2;
+      if (flake.x > W + 4) flake.x = -2;
+    }
+    const cameraTarget = Math.max(0, Math.min(WORLD_END - W, player.x - W * 0.40));
+    cameraX += (cameraTarget - cameraX) * Math.min(1, dt * 6.5);
+    if (allCleared && Math.abs(player.x - GOAL_X) < 62 && Math.abs(player.z - 0.58) < 0.22) finishGame(true);
+    updateReadouts();
+  }
+
+  function makePath(points, color) {
+    ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(points[0][0], points[0][1]);
+    for (let i = 1; i < points.length; i += 1) ctx.lineTo(points[i][0], points[i][1]);
+    ctx.closePath(); ctx.fill();
+  }
+  function drawBackground() {
+    const sky = ctx.createLinearGradient(0, 0, 0, HORIZON + 75);
+    sky.addColorStop(0, "#4f88c6"); sky.addColorStop(0.62, "#a8cde3"); sky.addColorStop(1, "#d9e9ef");
+    ctx.fillStyle = sky; ctx.fillRect(-20, -20, W + 40, H + 40);
+    const tileW = 1086, tileH = 362, offset = (cameraX * 0.115) % tileW;
+    if (art.town.complete && art.town.naturalWidth) {
+      for (let x = -offset; x < W + 10; x += tileW) ctx.drawImage(art.town, x, -15, tileW, tileH);
+    } else { ctx.fillStyle = "#7696b1"; ctx.fillRect(0, HORIZON - 80, W, 145); }
+    ctx.fillStyle = "#edf6f6"; ctx.fillRect(0, HORIZON + 20, W, H - HORIZON - 20);
+    makePath([[0, HORIZON + 28], [W * 0.44, HORIZON + 13], [W * 0.57, HORIZON + 13], [W, HORIZON + 27], [W, H], [0, H]], "#daeaf0");
+    makePath([[W * 0.425, HORIZON + 20], [W * 0.575, HORIZON + 20], [W * 1.05, H + 15], [-W * 0.05, H + 15]], "#b9d5e1");
+    makePath([[W * 0.455, HORIZON + 20], [W * 0.545, HORIZON + 20], [W * 0.83, H + 10], [W * 0.17, H + 10]], "rgba(242,250,252,.78)");
+    ctx.lineWidth = 2;
+    for (let i = -5; i <= 5; i += 1) {
+      ctx.strokeStyle = i === 0 ? "rgba(255,255,255,.30)" : "rgba(95,135,156,.14)";
+      ctx.beginPath(); ctx.moveTo(W / 2 + i * 13, HORIZON + 23); ctx.lineTo(W / 2 + i * 146, H + 5); ctx.stroke();
+    }
+    for (let i = 1; i <= 6; i += 1) {
+      const z = i / 7, y = zToY(z);
+      ctx.strokeStyle = i % 2 ? "rgba(255,255,255,.30)" : "rgba(91,134,153,.13)"; ctx.lineWidth = 1 + z * 1.1;
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    }
+    ctx.fillStyle = "rgba(255,255,255,.40)"; ctx.fillRect(0, H - 19, W, 3);
+    ctx.fillStyle = "rgba(87,127,148,.16)"; ctx.fillRect(0, H - 16, W, 2);
+  }
+  function drawPine(worldX, z, tint) {
+    const x = screenX(worldX); if (x < -90 || x > W + 90) return;
+    const foot = zToY(z), size = 34 * scaleAt(z);
+    ctx.save(); ctx.globalAlpha = 0.9; ctx.fillStyle = "#514e4a"; ctx.fillRect(x - size * 0.08, foot - size * 0.15, size * 0.16, size * 0.15);
+    for (let i = 0; i < 4; i += 1) {
+      const y = foot - size * (0.30 + i * 0.17), half = size * (0.18 + (3 - i) * 0.045);
+      makePath([[x, y - size * 0.22], [x - half, y + size * 0.12], [x + half, y + size * 0.12]], tint || "#244f4a");
+      ctx.fillStyle = "rgba(239,250,252,.78)"; ctx.fillRect(x - half * 0.62, y + size * 0.035, half * 1.15, size * 0.035);
+    }
+    ctx.restore();
+  }
+  function drawStreetLamp(worldX, z) {
+    const x = screenX(worldX); if (x < -40 || x > W + 40) return;
+    const foot = zToY(z), s = scaleAt(z);
+    ctx.fillStyle = "#354d56"; ctx.fillRect(x - 2 * s, foot - 52 * s, 4 * s, 52 * s); ctx.fillRect(x - 8 * s, foot - 54 * s, 16 * s, 3 * s);
+    ctx.fillStyle = "#ffe3a2"; ctx.fillRect(x - 4 * s, foot - 62 * s, 8 * s, 8 * s);
+    ctx.fillStyle = "rgba(255,228,160,.19)"; ctx.beginPath(); ctx.arc(x, foot - 58 * s, 17 * s, 0, Math.PI * 2); ctx.fill();
+  }
+  function drawStageGate() {
+    if (allCleared) return;
+    const x = screenX(gateX); if (x < -20 || x > W + 20) return;
+    ctx.save(); ctx.strokeStyle = "rgba(67,91,97,.62)"; ctx.lineWidth = 3; ctx.beginPath();
+    ctx.moveTo(x, HORIZON + 45); ctx.lineTo(x, H - 6); ctx.stroke();
+    for (let i = 0; i < 5; i += 1) {
+      const z = 0.18 + i * 0.16, y = zToY(z), s = scaleAt(z);
+      ctx.fillStyle = "#607780"; ctx.fillRect(x - 5 * s, y - 23 * s, 10 * s, 24 * s);
+      ctx.fillStyle = "#f3d278"; ctx.fillRect(x - 6 * s, y - 25 * s, 12 * s, 4 * s);
+    }
+    ctx.setLineDash([8, 7]); ctx.strokeStyle = "rgba(235,174,87,.62)"; ctx.beginPath();
+    ctx.moveTo(x, HORIZON + 56); ctx.lineTo(x, H - 9); ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+  }
+  function drawReindeer() {
+    const x = screenX(GOAL_X), z = 0.58, y = zToY(z), s = scaleAt(z);
+    ctx.fillStyle = allCleared ? "rgba(85,140,93,.2)" : "rgba(38,59,63,.33)"; ctx.fillRect(x - 56 * s, y - 2 * s, 112 * s, 18 * s);
+    if (!allCleared) {
+      ctx.fillStyle = "#465c61"; ctx.fillRect(x - 49 * s, y - 42 * s, 4 * s, 42 * s); ctx.fillRect(x + 45 * s, y - 42 * s, 4 * s, 42 * s);
+      ctx.fillStyle = "#d9e7eb"; ctx.fillRect(x - 49 * s, y - 43 * s, 98 * s, 5 * s);
+      ctx.fillStyle = "rgba(13,26,31,.82)"; ctx.font = "bold " + Math.round(9 * s) + "px ui-monospace, monospace"; ctx.textAlign = "center";
+      ctx.fillText("RYDD BØLGEN", x, y - 52 * s);
+    }
+    if (art.reindeer.complete && art.reindeer.naturalWidth) {
+      const rw = 90 * s, rh = rw * (art.reindeer.naturalHeight / art.reindeer.naturalWidth), bob = allCleared ? Math.sin(gameTime * 5) * 2 : 0;
+      ctx.drawImage(art.reindeer, x - rw / 2, y - rh + bob, rw, rh);
     } else {
-      context.fillStyle = "#ffd43b";
-      context.fillRect(drawX + 63, drawY + 48, 132, 120);
-      context.fillStyle = "#725140";
-      context.fillRect(drawX + 90, drawY + 8, 83, 51);
-      context.fillStyle = "#b58351";
-      context.fillRect(drawX + 15, drawY + 130, 234, 83);
+      ctx.fillStyle = "#9c6a43"; ctx.fillRect(x - 20 * s, y - 39 * s, 40 * s, 30 * s); ctx.fillRect(x + 9 * s, y - 56 * s, 24 * s, 22 * s);
+      ctx.fillStyle = "#d9b58a"; ctx.fillRect(x + 14 * s, y - 48 * s, 16 * s, 8 * s);
     }
-    context.restore();
-  }
-
-  function drawSnowballs() {
-    for (const snowball of projectiles) {
-      const x = Math.round(snowball.x - cameraX);
-      const y = Math.round(snowball.y);
-      context.fillStyle = "#7e9eb8";
-      context.fillRect(x - 7, y - 7, 16, 16);
-      context.fillStyle = "#f9fdff";
-      context.fillRect(x - 5, y - 6, 12, 12);
-      context.fillStyle = "#d9eef8";
-      context.fillRect(x - 3, y - 5, 5, 4);
+    if (allCleared) {
+      ctx.fillStyle = "#fff0a4"; ctx.font = "bold 10px ui-monospace, monospace"; ctx.textAlign = "center";
+      ctx.fillText("GÅ HIT FOR Å REDDE REINEN", x, y - 119 * s);
     }
   }
-
+  function drawEnemy(enemy) {
+    if (enemy.dead && enemy.removeTimer <= 0) return;
+    const x = screenX(enemy.x), foot = zToY(enemy.z), s = scaleAt(enemy.z) * enemy.scale;
+    const h = (enemy.type === "boss" ? 196 : 174) * s, w = h * 0.835;
+    const bob = enemy.mode === "approach" ? Math.sin(gameTime * 11 + enemy.x) * 2 * s : 0;
+    const tellShake = enemy.mode === "tell" ? Math.sin(gameTime * 42) * 2.8 * s : 0;
+    const fall = enemy.dead ? (1 - Math.max(0, enemy.removeTimer) / (enemy.type === "boss" ? 1.3 : 0.84)) : 0;
+    ctx.save(); ctx.globalAlpha = enemy.dead ? Math.max(0, 1 - fall * 1.15) : 1;
+    ctx.translate(x + tellShake, foot - bob + fall * 18 * s); ctx.scale(enemy.face > 0 ? -1 : 1, 1);
+    if (enemy.mode === "tell" && !enemy.dead) {
+      ctx.fillStyle = "rgba(247,87,61,.17)"; ctx.beginPath(); ctx.ellipse(0, -7 * s, enemy.range * 0.62 * s, 14 * s, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#ff775c"; ctx.font = "900 " + Math.round(15 * s) + "px ui-monospace, monospace"; ctx.textAlign = "center"; ctx.fillText("!", 0, -h - 8 * s);
+    }
+    if (enemy.hurt > 0 && Math.floor(gameTime * 32) % 2 === 0) ctx.globalAlpha *= 0.42;
+    if (art.rotor.complete && art.rotor.naturalWidth) ctx.drawImage(art.rotor, -w / 2, -h, w, h);
+    else {
+      ctx.fillStyle = "#086174"; ctx.fillRect(-w * 0.33, -h * 0.74, w * 0.66, h * 0.48);
+      ctx.fillStyle = "#eeeeec"; ctx.fillRect(-w * 0.15, -h * 0.98, w * 0.30, h * 0.27); ctx.fillRect(-w * 0.045, -h * 1.2, w * 0.09, h * 0.19);
+    }
+    if (enemy.type === "boss" && !enemy.dead) {
+      ctx.restore(); drawBar(x, foot - h - 8, 80 * scaleAt(enemy.z), 6, enemy.hp / enemy.maxHp, "#ee6955", "rgba(14,26,32,.75)");
+      ctx.fillStyle = "#fff1dc"; ctx.font = "bold 9px ui-monospace, monospace"; ctx.textAlign = "center"; ctx.fillText("VINDKONGEN", x, foot - h - 14); return;
+    }
+    if (!enemy.dead && enemy.hp < enemy.maxHp) {
+      ctx.restore(); drawBar(x, foot - h - 7, 38 * scaleAt(enemy.z), 4, enemy.hp / enemy.maxHp, "#f18870", "rgba(14,26,32,.7)"); return;
+    }
+    ctx.restore();
+  }
+  function drawPlayer() {
+    const foot = zToY(player.z), s = scaleAt(player.z), h = 190 * s;
+    const w = h * (art.tobias.naturalWidth ? art.tobias.naturalWidth / art.tobias.naturalHeight : 0.835);
+    const walking = held.left || held.right || held.up || held.down, bob = walking ? Math.sin(player.step) * 2.4 * s : Math.sin(gameTime * 2.2) * 1.1 * s;
+    const attack = player.attack, isActive = attackIsActive(attack);
+    let lean = 0;
+    if (attack && attack.time < attack.duration) lean = Math.sin(attack.time / attack.duration * Math.PI) * (attack.kind === "kick" ? 11 : attack.kind === "special" ? 5 : 8) * s;
+    if (player.dashTimer > 0) lean += 12 * s;
+    const flashing = player.invulnerable > 0 && Math.floor(gameTime * 30) % 2 === 0;
+    ctx.save(); ctx.globalAlpha = flashing ? 0.53 : 1; ctx.translate(screenX(player.x), foot + bob); ctx.scale(player.face < 0 ? -1 : 1, 1);
+    if (art.tobias.complete && art.tobias.naturalWidth) ctx.drawImage(art.tobias, -w / 2 + lean, -h, w, h);
+    else {
+      ctx.fillStyle = "#e8b900"; ctx.fillRect(-w * 0.30 + lean, -h * 0.76, w * 0.62, h * 0.42);
+      ctx.fillStyle = "#34221d"; ctx.fillRect(-w * 0.20 + lean, -h, w * 0.42, h * 0.24);
+      ctx.fillStyle = "#255c85"; ctx.fillRect(-w * 0.28 + lean, -h * 0.35, w * 0.58, h * 0.28);
+    }
+    ctx.restore();
+    ctx.save(); ctx.globalAlpha = flashing ? 0.58 : 1; ctx.textAlign = "center";
+    ctx.font = "900 " + Math.max(8, Math.round(10 * s)) + "px ui-monospace, monospace"; ctx.lineWidth = 2 * s; ctx.strokeStyle = "#59431a"; ctx.fillStyle = "#fff8d6";
+    ctx.strokeText("UKA", screenX(player.x) + lean * player.face, foot - h * 0.535);
+    ctx.fillText("UKA", screenX(player.x) + lean * player.face, foot - h * 0.535); ctx.restore();
+    if (isActive && attack) drawAttackArc(attack, foot, s);
+    if (player.blocking) {
+      ctx.strokeStyle = player.parry > 0 ? "rgba(255,240,135,.94)" : "rgba(153,213,255,.78)"; ctx.lineWidth = player.parry > 0 ? 3 : 2;
+      ctx.beginPath(); ctx.arc(screenX(player.x), foot - h * 0.60, 40 * s, -1.2, 1.2); ctx.stroke();
+    }
+    if (player.dashTimer > 0) for (let i = 1; i <= 3; i += 1) {
+      ctx.fillStyle = "rgba(202,239,255," + (0.35 - i * 0.07) + ")";
+      ctx.fillRect(screenX(player.x) - player.face * i * 12 * s - 2, foot - 20 * s, 5 * s, 3 * s);
+    }
+  }
+  function drawAttackArc(attack, foot, s) {
+    const cx = screenX(player.x) + player.face * attack.range * 0.53 * s, cy = foot - 81 * s;
+    if (attack.kind === "special") {
+      const radius = 38 + attack.time / attack.activeEnd * 80;
+      ctx.strokeStyle = "rgba(255,232,136,.88)"; ctx.lineWidth = Math.max(2, 6 * s);
+      ctx.beginPath(); ctx.arc(screenX(player.x), foot - 67 * s, radius * s, 0, Math.PI * 2); ctx.stroke(); return;
+    }
+    ctx.strokeStyle = attack.kind === "kick" ? "rgba(255,161,118,.95)" : "rgba(211,248,255,.96)";
+    ctx.lineWidth = attack.kind === "kick" ? 5 * s : 3 * s;
+    ctx.beginPath(); ctx.moveTo(screenX(player.x) + player.face * 17 * s, cy + 13 * s);
+    ctx.lineTo(cx, cy + (attack.kind === "kick" ? 4 : -8) * s); ctx.lineTo(cx + player.face * 17 * s, cy - 3 * s); ctx.stroke();
+    ctx.fillStyle = attack.kind === "kick" ? "#ffc178" : "#efffff"; ctx.fillRect(cx - 4 * s, cy - 6 * s, 9 * s, 9 * s);
+  }
+  function drawBar(cx, y, width, height, ratio, color, back) {
+    ctx.fillStyle = back; ctx.fillRect(cx - width / 2, y, width, height);
+    ctx.fillStyle = color; ctx.fillRect(cx - width / 2 + 1, y + 1, Math.max(0, (width - 2) * ratio), height - 2);
+  }
+  function drawPickups() {
+    for (const item of pickups) {
+      const x = screenX(item.x), y = zToY(item.z) - 22 - Math.sin(item.bob) * 5;
+      ctx.fillStyle = "rgba(14,28,35,.76)"; ctx.fillRect(x - 11, y - 10, 22, 22);
+      ctx.fillStyle = item.type === "cocoa" ? "#ffcf8e" : "#99e8ff"; ctx.fillRect(x - 8, y - 7, 16, 16);
+      ctx.fillStyle = "#29454b"; ctx.font = "bold 12px ui-monospace, monospace"; ctx.textAlign = "center";
+      ctx.fillText(item.type === "cocoa" ? "+" : "✦", x, y + 6);
+    }
+  }
+  function createBurst(x, z, count, colors) {
+    for (let i = 0; i < count; i += 1) {
+      const angle = Math.PI * 2 * i / count + Math.random() * 0.6, speed = 35 + Math.random() * 175;
+      particles.push({ x, z, lift: 28 + Math.random() * 95, vx: Math.cos(angle) * speed,
+        vz: Math.sin(angle) * speed / 260, vy: 20 + Math.random() * 140, gravity: 280 + Math.random() * 180,
+        life: 0.34 + Math.random() * 0.5, maxLife: 0.84, size: 2 + Math.random() * 5, color: colors[i % colors.length] });
+    }
+  }
+  function showFloater(text, x, z, color, size) { floaters.push({ text, x, z, lift: 108, speed: 38, life: 0.74, maxLife: 0.74, color, size: size || 14 }); }
+  function drawEffects() {
+    for (const p of particles) {
+      ctx.globalAlpha = Math.max(0, p.life / p.maxLife); ctx.fillStyle = p.color;
+      const x = screenX(p.x), y = zToY(p.z) - p.lift, size = p.size * (0.55 + p.life / p.maxLife * 0.55);
+      ctx.fillRect(x - size / 2, y - size / 2, size, size);
+    }
+    ctx.globalAlpha = 1;
+    for (const f of floaters) {
+      ctx.globalAlpha = Math.min(1, f.life / 0.19); ctx.fillStyle = "rgba(10,24,28,.78)";
+      ctx.font = "900 " + f.size + "px ui-monospace, monospace"; ctx.textAlign = "center";
+      const x = screenX(f.x), y = zToY(f.z) - f.lift; ctx.fillText(f.text, x + 1, y + 2);
+      ctx.fillStyle = f.color; ctx.fillText(f.text, x, y);
+    }
+    ctx.globalAlpha = 1;
+  }
   function drawHud() {
-    context.fillStyle = "rgba(13,28,37,.86)";
-    context.fillRect(16, 15, 300, 53);
-    context.fillStyle = "#bce9c6";
-    context.font = "bold 15px ui-monospace, SFMono-Regular, Consolas, monospace";
-    context.fillText("TOBIAS // KIRKENES", 29, 37);
-    context.fillStyle = "#f5fbff";
-    context.font = "bold 11px ui-monospace, SFMono-Regular, Consolas, monospace";
-    context.fillText(`REINELIV ${lives}/3     VINDMØLLER ${defeated}/4`, 29, 56);
-    context.fillStyle = "rgba(13,28,37,.74)";
-    context.fillRect(width - 187, 15, 171, 31);
-    context.fillStyle = "#e9f5fc";
-    context.font = "bold 10px ui-monospace, SFMono-Regular, Consolas, monospace";
-    context.fillText("SNØBALLER > VIND", width - 175, 35);
-  }
-
-  function render() {
-    drawBackground();
-    for (const windmill of windmills) drawWindmill(windmill);
-    drawPlayer();
-    drawSnowballs();
-    drawHud();
-  }
-
-  function frame(now) {
-    const delta = Math.min(0.04, Math.max(0, (now - lastFrame) / 1000));
-    lastFrame = now;
-    if (!portfolio.hidden) {
-      update(delta);
-      render();
+    ctx.fillStyle = "rgba(12,26,31,.88)"; ctx.fillRect(15, 14, 264, 88);
+    ctx.strokeStyle = "rgba(212,240,225,.24)"; ctx.strokeRect(15.5, 14.5, 263, 87);
+    ctx.fillStyle = "#a8e9ba"; ctx.font = "900 13px ui-monospace, monospace"; ctx.textAlign = "left";
+    ctx.fillText("TOBIAS  //  KIRKENES", 28, 34); ctx.fillStyle = "#eaf5f1"; ctx.font = "bold 11px ui-monospace, monospace"; ctx.fillText("LIV", 28, 55);
+    for (let i = 0; i < player.maxHp; i += 1) {
+      ctx.fillStyle = i < player.hp ? "#ff8e7a" : "#42565a"; ctx.fillRect(57 + i * 20, 45, 15, 12);
+      if (i < player.hp) { ctx.fillStyle = "#ffd4c7"; ctx.fillRect(60 + i * 20, 47, 5, 3); }
     }
-    window.requestAnimationFrame(frame);
+    ctx.fillStyle = "#abc0bb"; ctx.fillText("SPESIAL", 28, 78); ctx.fillStyle = "rgba(255,255,255,.14)"; ctx.fillRect(94, 68, 155, 11);
+    ctx.fillStyle = player.special >= 45 ? "#f4cc69" : "#69c5df"; ctx.fillRect(96, 70, 151 * (player.special / 100), 7);
+    ctx.fillStyle = "#dff3eb"; ctx.font = "bold 9px ui-monospace, monospace"; ctx.fillText(Math.floor(player.special) + "%", 254, 78);
+    ctx.fillStyle = "rgba(12,26,31,.82)"; ctx.fillRect(W - 174, 14, 159, 43); ctx.strokeStyle = "rgba(212,240,225,.18)"; ctx.strokeRect(W - 173.5, 14.5, 158, 42);
+    ctx.fillStyle = "#eff7f2"; ctx.font = "900 11px ui-monospace, monospace"; ctx.textAlign = "right"; ctx.fillText("BØLGE " + Math.min(currentWave, 4) + " / 4", W - 27, 32);
+    ctx.fillStyle = "#b5c5bf"; ctx.font = "bold 10px ui-monospace, monospace"; ctx.fillText(String(score).padStart(6, "0") + " P", W - 27, 48);
+    const boss = enemies.find((enemy) => enemy.type === "boss" && !enemy.dead);
+    if (boss) {
+      ctx.fillStyle = "rgba(13,26,31,.84)"; ctx.fillRect(W / 2 - 180, 15, 360, 34);
+      ctx.fillStyle = "#f2eee1"; ctx.font = "bold 10px ui-monospace, monospace"; ctx.textAlign = "center";
+      ctx.fillText("VINDKONGEN" + (boss.hp < boss.maxHp * 0.48 ? " · RASER" : ""), W / 2, 27);
+      drawBar(W / 2, 37, 326, 7, boss.hp / boss.maxHp, boss.hp < boss.maxHp * 0.48 ? "#ff755f" : "#ecaf62", "#29383b");
+    }
+    if (player.comboCount > 1 && player.comboTimer > 0) {
+      ctx.textAlign = "center"; ctx.font = "900 19px ui-monospace, monospace"; ctx.fillStyle = "rgba(18,31,34,.85)";
+      ctx.fillText("KOMBO x" + player.comboCount, W / 2 + 1, 93); ctx.fillStyle = "#fff0a2"; ctx.fillText("KOMBO x" + player.comboCount, W / 2, 91);
+    }
+    if (stageNotice.timer > 0) {
+      ctx.globalAlpha = Math.min(1, stageNotice.timer * 2); ctx.fillStyle = "rgba(12,25,30,.83)"; ctx.fillRect(W / 2 - 182, H - 49, 364, 30);
+      ctx.fillStyle = "#eaf7ee"; ctx.font = "900 11px ui-monospace, monospace"; ctx.textAlign = "center"; ctx.fillText(stageNotice.text, W / 2, H - 30); ctx.globalAlpha = 1;
+    }
   }
-
-  function clearMovement() {
-    input.left = false;
-    input.right = false;
+  function drawWeather() {
+    ctx.fillStyle = "rgba(255,255,255,.78)";
+    for (const flake of weather) ctx.fillRect(Math.round(flake.x), Math.round(flake.y), flake.size, flake.size);
   }
-
-  function keydown(event) {
-    if (!running) return;
+  function render() {
+    ctx.save();
+    const sx = shake > 0 ? (Math.random() - 0.5) * shake : 0, sy = shake > 0 ? (Math.random() - 0.5) * shake * 0.7 : 0;
+    ctx.translate(sx, sy); drawBackground();
+    for (let i = 0; i < 10; i += 1) drawPine(i * 344 + 108, 0.13 + (i % 3) * 0.025, i % 2 ? "#315e57" : "#244e52");
+    for (let i = 0; i < 9; i += 1) drawStreetLamp(i * 405 + 205, 0.30 + (i % 2) * 0.46);
+    drawStageGate();
+    const drawables = enemies.filter((enemy) => !enemy.dead || enemy.removeTimer > 0).map((enemy) => ({ z: enemy.z, type: "enemy", value: enemy }));
+    drawables.push({ z: 0.58, type: "reindeer", value: null });
+    drawables.push({ z: player.z, type: "player", value: player }); drawables.sort((a, b) => a.z - b.z);
+    for (const d of drawables) {
+      if (d.type === "enemy") drawEnemy(d.value);
+      else if (d.type === "player") drawPlayer();
+      else drawReindeer();
+    }
+    drawPickups(); drawEffects(); drawHud(); drawWeather();
+    if (flash > 0) { ctx.fillStyle = "rgba(255,242,201," + Math.min(0.28, flash) + ")"; ctx.fillRect(-10, -10, W + 20, H + 20); }
+    ctx.restore();
+  }
+  function frame(now) {
+    const dt = Math.min(0.04, Math.max(0, (now - lastFrame) / 1000)); lastFrame = now;
+    if (portfolio.hidden) { window.requestAnimationFrame(frame); return; }
+    if (state === "running") update(dt);
+    if (state === "ready") {
+      player = player || { x: 144, z: 0.56, face: 1, hp: 10, maxHp: 10, special: 20, comboCount: 0, comboTimer: 0, invulnerable: 0, dashTimer: 0, blocking: false, parry: 0, step: 0 };
+      if (!enemies.length) enemies = [createEnemy("runner", 520, 0.42), createEnemy("drifter", 650, 0.69)];
+    }
+    render(); window.requestAnimationFrame(frame);
+  }
+  function onKeyDown(event) {
+    if (portfolio.hidden) return;
     const key = event.key.toLowerCase();
-    if (["arrowleft", "arrowright", "arrowup", " "].includes(key)) event.preventDefault();
-    if (key === "arrowleft" || key === "a") input.left = true;
-    if (key === "arrowright" || key === "d") input.right = true;
-    if (!event.repeat && (key === "arrowup" || key === " " || key === "w")) jump();
-    if (!event.repeat && (key === "x" || key === "enter")) throwSnowball();
+    if (["arrowleft", "arrowright", "arrowup", "arrowdown", " "].includes(key)) event.preventDefault();
+    if (key === "p" || key === "escape") { if (!event.repeat) pauseGame(); return; }
+    if (state !== "running") return;
+    if (key === "arrowleft" || key === "a") { held.left = true; if (!event.repeat) nudge("left"); }
+    if (key === "arrowright" || key === "d") { held.right = true; if (!event.repeat) nudge("right"); }
+    if (key === "arrowup" || key === "w") { held.up = true; if (!event.repeat) nudge("up"); }
+    if (key === "arrowdown" || key === "s") { held.down = true; if (!event.repeat) nudge("down"); }
+    if (!event.repeat && (key === "j" || key === "z")) requestAttack("punch");
+    if (!event.repeat && (key === "k" || key === "x")) requestAttack("kick");
+    if (!event.repeat && (key === "c" || key === "l")) requestAttack("special");
+    if (!event.repeat && key === " ") dash();
+    if (key === "b") held.block = true;
   }
-
-  function keyup(event) {
+  function onKeyUp(event) {
     const key = event.key.toLowerCase();
-    if (key === "arrowleft" || key === "a") input.left = false;
-    if (key === "arrowright" || key === "d") input.right = false;
+    if (key === "arrowleft" || key === "a") held.left = false;
+    if (key === "arrowright" || key === "d") held.right = false;
+    if (key === "arrowup" || key === "w") held.up = false;
+    if (key === "arrowdown" || key === "s") held.down = false;
+    if (key === "b") held.block = false;
   }
-
-  overlayButton.addEventListener("click", startGame);
-  window.addEventListener("keydown", keydown);
-  window.addEventListener("keyup", keyup);
-  window.addEventListener("blur", clearMovement);
-
-  document.querySelectorAll("[data-hold]").forEach((button) => {
-    const direction = button.dataset.hold;
-    button.addEventListener("pointerdown", (event) => {
-      event.preventDefault();
-      input[direction] = true;
-      button.setPointerCapture(event.pointerId);
-    });
-    button.addEventListener("pointerup", () => { input[direction] = false; });
-    button.addEventListener("pointercancel", () => { input[direction] = false; });
-    button.addEventListener("lostpointercapture", () => { input[direction] = false; });
+  overlayButton.addEventListener("click", () => { if (state === "paused") pauseGame(); else resetGame(); });
+  soundButton.addEventListener("click", () => {
+    soundOn = !soundOn; soundButton.textContent = soundOn ? "LYD: PÅ" : "LYD: AV";
+    soundButton.setAttribute("aria-pressed", String(soundOn));
+    if (soundOn) { initSound(); playTone(520, 0.08, "triangle", 0.025); }
   });
-
-  document.querySelector('[data-action="jump"]').addEventListener("click", jump);
-  document.querySelector('[data-action="throw"]').addEventListener("click", throwSnowball);
-
-  player = { x: 155, jumpHeight: 0, jumpVelocity: 0, facing: 1, throwCooldown: 0, hurtTimer: 0, stride: 0 };
-  windmills = resetWindmills();
-  updateHud();
-  window.requestAnimationFrame(frame);
+  window.addEventListener("keydown", onKeyDown, { passive: false });
+  window.addEventListener("keyup", onKeyUp); window.addEventListener("blur", clearHeld);
+  document.querySelectorAll("[data-hold]").forEach((button) => {
+    const name = button.dataset.hold;
+    button.addEventListener("pointerdown", (event) => { event.preventDefault(); held[name] = true; nudge(name); button.setPointerCapture(event.pointerId); });
+    const release = () => { held[name] = false; };
+    button.addEventListener("pointerup", release); button.addEventListener("pointercancel", release); button.addEventListener("lostpointercapture", release);
+  });
+  document.querySelectorAll("[data-action]").forEach((button) => button.addEventListener("click", () => {
+    const action = button.dataset.action;
+    if (action === "punch") requestAttack("punch");
+    if (action === "kick") requestAttack("kick");
+    if (action === "special") requestAttack("special");
+    if (action === "dash") dash();
+  }));
+  player = { x: 144, z: 0.56, face: 1, hp: 10, maxHp: 10, special: 20, comboCount: 0, comboTimer: 0, invulnerable: 0, dashTimer: 0, blocking: false, parry: 0, step: 0 };
+  enemies = [createEnemy("runner", 520, 0.42), createEnemy("drifter", 650, 0.69)];
+  updateReadouts(); window.requestAnimationFrame(frame);
 })();

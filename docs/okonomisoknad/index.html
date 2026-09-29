@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f7f8f5">
-  <meta name="description" content="Arons lille økonomiunivers — med en uventet inngang.">
-  <title>Aron Süssmann — økonomi & strategi</title>
+  <meta name="description" content="Et 2,5D beat ’em up i pixelart-Kirkenes: hjelp Tobias å slå vindmøllefolket og redde reinen.">
+  <title>Tobias vs. vindmøllefolket — Kirkenes Beat ’em up</title>
   <style>
     :root {
       color-scheme: light;
@@ -63,6 +63,14 @@
     .badge-row { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 29px; }
     .badge { padding: 8px 12px; border: 1px solid rgba(197,220,204,.18); border-radius: 40px; color: #d7e4db; font-size: .74rem; }
     .hero-panel { min-height: 370px; padding: 23px 22px 17px; border: 1px solid rgba(195,219,202,.18); border-radius: 7px; background: linear-gradient(145deg, rgba(255,255,255,.055), rgba(255,255,255,.015)); box-shadow: 0 24px 70px rgba(0,0,0,.17); }
+    .mission-card { display: flex; flex-direction: column; justify-content: space-between; min-height: 300px; padding: 25px; border: 1px solid rgba(195,219,202,.22); border-radius: 7px; background: radial-gradient(circle at 85% 10%, rgba(62,129,94,.22), transparent 38%), linear-gradient(145deg, #182a28, #111b1c); box-shadow: 0 24px 70px rgba(0,0,0,.2); }
+    .mission-top { display: flex; justify-content: space-between; color: #c0cbc4; font-size: .72rem; letter-spacing: .08em; }
+    .mission-card h2 { margin: 25px 0 8px; color: #f3f7f3; font-family: Georgia, serif; font-size: 1.9rem; font-weight: 400; letter-spacing: -.04em; }
+    .mission-card p { margin: 0; color: #9daea4; font-size: .83rem; line-height: 1.65; }
+    .mission-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 9px; margin-top: 25px; }
+    .mission-stat { padding: 12px; border: 1px solid rgba(195,219,202,.14); background: rgba(255,255,255,.035); }
+    .mission-stat strong { display: block; color: #9addad; font: 800 .72rem ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .06em; }
+    .mission-stat span { display: block; margin-top: 5px; color: #b5c2bb; font-size: .68rem; }
     .panel-top { display: flex; justify-content: space-between; gap: 15px; color: #c0cbc4; font-size: .73rem; }
     .live { display: inline-flex; align-items: center; gap: 7px; color: #8fd0a5; }
     .live::before { width: 6px; height: 6px; border-radius: 50%; background: #50be7e; content: ""; box-shadow: 0 0 10px #50be7e; }
@@ -89,11 +97,11 @@
     .choice-button:focus-visible { outline: 3px solid #f5b700; outline-offset: 3px; }
     .chart-result { min-height: 1.3em; margin: 8px 0 0; color: #aebbb2; font-size: .68rem; }
     .section { padding: 74px clamp(22px, 8vw, 128px); }
-    .game-section { padding: 74px clamp(22px, 8vw, 128px); color: #edf4ef; background: #111e23; }
+    .game-section { padding: 70px clamp(18px, 5vw, 76px) 66px; color: #edf4ef; background: linear-gradient(160deg, #142328, #10191c 70%); }
     .game-heading { display: flex; align-items: end; justify-content: space-between; gap: 25px; margin-bottom: 25px; }
     .game-heading h2 { margin: 0; font-family: Georgia, serif; font-size: clamp(2rem, 4vw, 3.5rem); font-weight: 400; letter-spacing: -.055em; }
     .game-heading p:last-child { max-width: 390px; margin: 0; color: #afbfbb; font-size: .9rem; line-height: 1.7; }
-    .game-shell { position: relative; overflow: hidden; width: 100%; aspect-ratio: 16 / 9; border: 8px solid #263a3d; border-radius: 6px; background: #83aee5; box-shadow: 0 18px 55px rgba(0,0,0,.28); }
+    .game-shell { position: relative; overflow: hidden; width: 100%; aspect-ratio: 16 / 9; border: 5px solid #2a4142; border-radius: 7px; background: #83aee5; box-shadow: 0 22px 70px rgba(0,0,0,.38), 0 0 0 1px rgba(255,255,255,.05); }
     #kirkenes-game { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
     .game-overlay { position: absolute; inset: 0; display: grid; place-items: center; padding: 18px; background: rgba(7,17,24,.42); }
     .game-overlay[hidden] { display: none; }
@@ -106,10 +114,15 @@
     .game-overlay-card button:focus-visible, .game-control:focus-visible { outline: 3px solid #f4ca5b; outline-offset: 3px; }
     .game-meta { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-top: 14px; color: #c3d0cb; font-size: .74rem; }
     .game-meta strong { color: #9addad; }
+    .game-meta-stats { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+    .game-meta button { padding: 7px 10px; border: 1px solid #526762; border-radius: 4px; background: transparent; color: #dbe9e2; font: 700 .68rem ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .game-meta button:hover { border-color: #9addad; color: #9addad; }
     .game-key-help { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
     .game-key { display: inline-block; min-width: 26px; margin: 0 2px; padding: 4px 6px; border: 1px solid #60736d; border-radius: 3px; color: #f2f8f3; text-align: center; }
-    .touch-controls { display: none; gap: 8px; margin-top: 13px; }
-    .game-control { flex: 1; min-width: 48px; padding-inline: 8px; }
+    .touch-controls { display: none; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-top: 13px; }
+    .game-control { min-width: 45px; padding-inline: 7px; touch-action: none; user-select: none; }
+    .game-control[data-action="special"] { border-color: #e3bd58; background: #51401d; }
+    .game-control[data-action="kick"] { border-color: #eb9876; background: #562b24; }
     .game-credit { margin: 13px 0 0; color: #93a6a0; font-size: .7rem; }
     .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 25px; margin-bottom: 27px; }
     .section-kicker { margin: 0 0 10px; color: var(--green); font-size: .69rem; font-weight: 800; letter-spacing: .19em; text-transform: uppercase; }
@@ -145,8 +158,9 @@
       .hero { padding-top: 52px; padding-bottom: 52px; }
       .section { padding-top: 54px; padding-bottom: 54px; }
       .game-section { padding-top: 54px; padding-bottom: 54px; }
-      .game-shell { border-width: 4px; }
+      .game-shell { border-width: 3px; aspect-ratio: 16 / 9; }
       .game-meta { align-items: flex-start; flex-direction: column; }
+      .game-meta-stats { gap: 8px 14px; }
       .section-heading { align-items: flex-start; flex-direction: column; }
       .grid { grid-template-columns: 1fr; }
       .card { min-height: 190px; }
@@ -155,8 +169,9 @@
       .footer { flex-direction: column; }
     }
     @media (pointer: coarse), (max-width: 700px) {
-      .touch-controls { display: flex; }
+      .touch-controls { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
       .game-key-help { display: none; }
+      .game-control { min-width: 0; padding: 9px 4px; font-size: .62rem; }
     }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
@@ -190,15 +205,61 @@
 
       <section class="hero" id="top">
         <div class="hero-copy">
-          <p class="eyebrow">Økonomi · strategi · styrearbeid</p>
-          <h1>Gode beslutninger.<br><em>Enda bedre historier.</em></h1>
-          <p class="hero-lede">En personlig portefølje med blikk for økonomi, initiativ og folkene bak tallene. Med en liten dose selvironi i margen.</p>
-          <div class="badge-row"><span class="badge">Styrearbeid</span><span class="badge">Økonomiinteresse</span><span class="badge">Strategi</span></div>
+          <p class="eyebrow">2,5D BEAT ’EM UP · KIRKENES</p>
+          <h1>Snøvær i Kirkenes.<br><em>Slå tilbake.</em></h1>
+          <p class="hero-lede">Tobias går til fots gjennom en snødekt by. Gå både sidelengs og inn i dybden, bygg kombinasjoner, parer vindmøllefolket og redd reinen.</p>
+          <div class="badge-row"><span class="badge">DYBDEBEVEGELSE</span><span class="badge">KOMBOER + PARRY</span><span class="badge">BOSSFIGHT</span></div>
+        </div>
+        <div class="mission-card" aria-label="Vinteroppdragets mål">
+          <div class="mission-top"><span>OPPDRAG 01</span><span class="live">KIRKENES</span></div>
+          <div><h2>Redd reinsdyret.</h2><p>Vindmøllefolket har blåst byen ut av kurs. Rydd arenaen til fots, og ta den store bossen til slutt.</p></div>
+          <div class="mission-stats"><div class="mission-stat"><strong>2,5D / SIDE</strong><span>Gå inn og ut av banen</span></div><div class="mission-stat"><strong>COMBO</strong><span>Slå → spark → avslutt</span></div><div class="mission-stat"><strong>PARRY</strong><span>Stopp slaget i siste liten</span></div><div class="mission-stat"><strong>BOSS</strong><span>Vindkongen venter</span></div></div>
+        </div>
+      </section>
+
+      <section class="game-section" id="vinteroppdrag" aria-labelledby="game-title">
+        <div class="game-heading">
+          <div><p class="section-kicker" style="color:#9addad">VINTEROPPDRAG / 01</p><h2 id="game-title">Tobias vs. vindmøllefolket</h2></div>
+          <p>Vindmøllene er folk med rotorhoder. Treff dem i riktig dybdebane, hold vakt når de varsler et angrep, og slå tilbake i åpningen.</p>
+        </div>
+        <div class="game-shell">
+          <canvas id="kirkenes-game" width="960" height="540" tabindex="0" aria-label="Pixelart beat ’em up i Kirkenes. Gå med piltastene eller WASD, slå med J, spark med K, bruk spesialangrep med C, dash med mellomrom og blokker med B.">Pixelart beat ’em up: beveg deg med piltastene eller WASD, slå med J, spark med K, bruk spesialangrep med C, dash med mellomrom og blokker med B.</canvas>
+          <div class="game-overlay" id="game-overlay">
+            <div class="game-overlay-card">
+              <p class="game-overlay-kicker" id="game-overlay-kicker">KIRKENES · BEAT ’EM UP</p>
+              <h3 id="game-overlay-title">Slå deg gjennom snøstormen.</h3>
+              <p id="game-overlay-text">Gå sidelengs og inn i dybden. Kjed slag og spark, blokker akkurat før treffet for en parering, og spar spesialmåleren til sjefen.</p>
+              <button id="game-overlay-button" type="button">Gå inn i arenaen</button>
+            </div>
+          </div>
+        </div>
+        <div class="game-meta">
+          <div class="game-key-help"><span class="game-key">WASD</span> gå / dybde <span class="game-key">J</span> slag <span class="game-key">K</span> spark <span class="game-key">C</span> spesial <span class="game-key">SPACE</span> dash <span class="game-key">B</span> blokk/parry <span class="game-key">P</span> pause</div>
+          <div class="game-meta-stats"><span>LIV <strong id="player-lives">10 / 10</strong></span><span>KOMBO <strong id="combo-readout">—</strong></span><span>POENG <strong id="score-readout">0</strong></span><span id="boss-readout" hidden>BOSS <strong>VENTER</strong></span><button type="button" id="sound-toggle" aria-pressed="true">LYD: PÅ</button></div>
+        </div>
+        <div class="touch-controls" aria-label="Berøringskontroller">
+          <button class="game-control" type="button" data-hold="up" aria-label="Gå bakover i dybden">↑ DYBDE</button>
+          <button class="game-control" type="button" data-hold="left" aria-label="Gå til venstre">←</button>
+          <button class="game-control" type="button" data-hold="down" aria-label="Gå framover i dybden">↓</button>
+          <button class="game-control" type="button" data-hold="right" aria-label="Gå til høyre">→</button>
+          <button class="game-control" type="button" data-action="punch">SLÅ</button>
+          <button class="game-control" type="button" data-action="kick">SPARK</button>
+          <button class="game-control" type="button" data-action="dash">DASH</button>
+          <button class="game-control" type="button" data-action="special">SPESIAL</button>
+          <button class="game-control" type="button" data-hold="block">HOLD / PARRY</button>
+        </div>
+        <p class="game-credit">Tobias står på bakken hele veien. Ingen fallkanter: bare snø, dybdebane, kombinasjoner og rotorhoder.</p>
+      </section>
+
+      <section class="section" id="overblikk">
+        <div class="section-heading">
+          <div><p class="section-kicker">BONUS / ØKONOMISJEF</p><h2>Hvem får toppjobben?</h2></div>
+          <p>Vitenskapelig metode: fullstendig useriøs. Velg Aron, og kurven forlater diagrammet.</p>
         </div>
         <div class="hero-panel" id="economy-chart" aria-label="Tøysete økonomisjef-simulator">
           <div class="panel-top"><span>ØKONOMISJEF-SIMULATOR</span><span class="live">AVHENGER AV VALG</span></div>
           <p class="chart-title">Hvem får toppjobben?</p>
-          <span class="chart-subtitle">Vitenskapelig metode: fullstendig useriøs</span>
+          <span class="chart-subtitle">Illustrasjon · ingen ekte regnskap</span>
           <svg class="chart" viewBox="0 0 480 148" role="img" aria-label="Velg en kandidat for å se en tøysete graf">
             <path class="chart-grid" d="M40 28H472M40 54H472M40 112H472M40 138H472"/>
             <path class="chart-zero" d="M40 84H472"/>
@@ -214,42 +275,6 @@
             <button class="choice-button" type="button" data-choice-button="other" aria-pressed="false">Velg noen andre</button>
           </div>
           <p class="chart-result" id="chart-result" aria-live="polite">Velg kandidat og følg utviklingen.</p>
-        </div>
-      </section>
-
-      <section class="game-section" id="vinteroppdrag" aria-labelledby="game-title">
-        <div class="game-heading">
-          <div><p class="section-kicker" style="color:#9addad">VINTEROPPDRAG / 01</p><h2 id="game-title">Tobias vs. vindmøllene</h2></div>
-          <p>Pixel-Kirkenes er dekket av snø. Vindmøllene går løs på reinen — hjelp Tobias å slå dem ut med snøballer.</p>
-        </div>
-        <div class="game-shell">
-          <canvas id="kirkenes-game" width="960" height="540" tabindex="0" aria-label="Sideskrollende pixelart-spill i Kirkenes. Styr Tobias på reinen forbi vindmøller, hopp og kast snøballer.">Pixelart-spill: styr Tobias med piltastene, hopp med mellomrom og kast snøball med X.</canvas>
-          <div class="game-overlay" id="game-overlay">
-            <div class="game-overlay-card">
-              <p class="game-overlay-kicker" id="game-overlay-kicker">KIRKENES · ARCADE MODE</p>
-              <h3 id="game-overlay-title">Redd reinen.<br>Stans vindmøllene.</h3>
-              <p id="game-overlay-text">Hopp over de roterende bladene, og treff hvert tårn med snøballer før reinen mister alle tre livene.</p>
-              <button id="game-overlay-button" type="button">Start vinteroppdrag</button>
-            </div>
-          </div>
-        </div>
-        <div class="game-meta">
-          <div class="game-key-help"><span class="game-key">←</span><span class="game-key">→</span> bevege deg <span class="game-key">SPACE</span> hopp <span class="game-key">X</span> kast snøball</div>
-          <div>REINENS LIV: <strong id="reindeer-lives">♥ ♥ ♥</strong> &nbsp; · &nbsp; VINDMØLLER: <strong id="windmill-score">0 / 4</strong></div>
-        </div>
-        <div class="touch-controls" aria-label="Spillkontroller">
-          <button class="game-control" type="button" data-hold="left" aria-label="Gå til venstre">◀</button>
-          <button class="game-control" type="button" data-hold="right" aria-label="Gå til høyre">▶</button>
-          <button class="game-control" type="button" data-action="jump">HOPP</button>
-          <button class="game-control" type="button" data-action="throw">SNØBALL</button>
-        </div>
-        <p class="game-credit">Pixelart generert fra Tobias-bildene og en Kirkenes-vinterkulisse. Vindmøllekampen er et tøysete minispill.</p>
-      </section>
-
-      <section class="section" id="overblikk">
-        <div class="section-heading">
-          <div><p class="section-kicker">01 / Overblikk</p><h2>Et lite mandat.</h2></div>
-          <p>En side med finansfølelse og en uventet åpning. Innholdet bygger på opplysninger fra Aron selv.</p>
         </div>
         <div class="grid">
           <section class="card"><p class="card-label">Fokus</p><h3>Økonomi med bakkekontakt</h3><p>Interesse for hvordan prioriteringer, budsjetter og gode beslutninger skaper verdi over tid.</p></section>

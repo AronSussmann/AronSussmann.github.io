@@ -529,19 +529,16 @@
       row = attack.kind === "kick" ? 2 : 1;
       column = attack.time < attack.windup ? 0 : attack.time <= attack.activeEnd ? 1 : 2;
     } else if (walking) column = 1 + (Math.floor(player.step / Math.PI) % 2);
-    const hiddenFlash = player.invulnerable > 0 && Math.floor(gameTime * 24) % 2 === 0;
-    if (!hiddenFlash) {
-      ctx.save(); ctx.translate(screenX(player.x), foot + bob); ctx.scale(player.face < 0 ? -1 : 1, 1);
-      if (art.tobiasActions.complete && art.tobiasActions.naturalWidth) {
-        drawActionFrame(art.tobiasActions, row, column, h * 1.12, h);
-        drawPlayerLogo(row, column, h, s);
-      } else {
-        ctx.fillStyle = "#e8b900"; ctx.fillRect(-h * 0.28, -h * 0.75, h * 0.56, h * 0.38);
-        ctx.fillStyle = "#34221d"; ctx.fillRect(-h * 0.20, -h, h * 0.40, h * 0.24);
-        ctx.fillStyle = "#255c85"; ctx.fillRect(-h * 0.26, -h * 0.37, h * 0.52, h * 0.28);
-      }
-      ctx.restore();
+    ctx.save(); ctx.translate(screenX(player.x), foot + bob); ctx.scale(player.face < 0 ? -1 : 1, 1);
+    if (art.tobiasActions.complete && art.tobiasActions.naturalWidth) {
+      drawActionFrame(art.tobiasActions, row, column, h * 1.12, h);
+      drawPlayerLogo(row, column, h, s);
+    } else {
+      ctx.fillStyle = "#e8b900"; ctx.fillRect(-h * 0.28, -h * 0.75, h * 0.56, h * 0.38);
+      ctx.fillStyle = "#34221d"; ctx.fillRect(-h * 0.20, -h, h * 0.40, h * 0.24);
+      ctx.fillStyle = "#255c85"; ctx.fillRect(-h * 0.26, -h * 0.37, h * 0.52, h * 0.28);
     }
+    ctx.restore();
     if (player.blocking) {
       ctx.strokeStyle = player.parry > 0 ? "rgba(255,240,135,.94)" : "rgba(153,213,255,.78)"; ctx.lineWidth = player.parry > 0 ? 3 : 2;
       ctx.beginPath(); ctx.arc(screenX(player.x), foot - h * 0.60, 40 * s, -1.2, 1.2); ctx.stroke();

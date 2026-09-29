@@ -10,7 +10,6 @@
   const makeImage = (name) => { const image = new Image(); image.src = new URL(name, scriptBase).href; return image; };
   const art = {
     town: makeImage("kirkenes-snow.png"),
-    tobias: makeImage("tobias-brawler.png"),
     rotor: makeImage("vindmolle-brawler.png"),
     tobiasActions: makeImage("tobias-actions.png"),
     rotorActions: makeImage("vindmolle-actions.png"),
@@ -68,6 +67,19 @@
   function drawActionFrame(image, row, column, width, height) {
     const cellWidth = image.naturalWidth / 3, cellHeight = image.naturalHeight / 3;
     ctx.drawImage(image, column * cellWidth, row * cellHeight, cellWidth, cellHeight, -width / 2, -height, width, height);
+  }
+  function drawPlayerLogo(row, column, h, s) {
+    const positions = [
+      [[0, -0.58], [-0.05, -0.58], [-0.03, -0.58]],
+      [[-0.02, -0.59], [-0.12, -0.61], [-0.02, -0.59]],
+      [[0, -0.59], [-0.17, -0.60], [-0.07, -0.60]]
+    ];
+    const [x, y] = positions[row][column];
+    ctx.save(); ctx.translate(x * h, y * h);
+    if (player.face < 0) ctx.scale(-1, 1);
+    ctx.textAlign = "center"; ctx.font = "900 " + Math.max(8, Math.round(10 * s)) + "px ui-monospace, monospace";
+    ctx.lineWidth = 2 * s; ctx.strokeStyle = "#59431a"; ctx.fillStyle = "#fff8d6";
+    ctx.strokeText("UKA", 0, 4 * s); ctx.fillText("UKA", 0, 4 * s); ctx.restore();
   }
 
   function createEnemy(type, x, z) {
@@ -509,35 +521,27 @@
   }
   function drawPlayer() {
     const foot = zToY(player.z), s = scaleAt(player.z), h = 214 * s;
-    const w = h * (art.tobias.naturalWidth ? art.tobias.naturalWidth / art.tobias.naturalHeight : 0.835);
     const walking = held.left || held.right || held.up || held.down || player.walkPulse > 0;
     const bob = walking ? Math.abs(Math.sin(player.step)) * 2.3 * s : Math.sin(gameTime * 2.2) * 1.1 * s;
-    const attack = player.attack, isActive = attackIsActive(attack);
-    let lean = 0, row = 0, column = 0;
+    const attack = player.attack;
+    let row = 0, column = 0;
     if (attack && attack.time < attack.duration && (attack.kind === "punch" || attack.kind === "kick")) {
       row = attack.kind === "kick" ? 2 : 1;
       column = attack.time < attack.windup ? 0 : attack.time <= attack.activeEnd ? 1 : 2;
-      lean = attack.kind === "kick" ? 3 * s : 5 * s;
     } else if (walking) column = 1 + (Math.floor(player.step / Math.PI) % 2);
-    if (player.dashTimer > 0) lean += 12 * s;
-    const flashing = player.invulnerable > 0 && Math.floor(gameTime * 30) % 2 === 0;
-    ctx.save(); ctx.globalAlpha = flashing ? 0.53 : 1; ctx.translate(screenX(player.x), foot + bob); ctx.scale(player.face < 0 ? -1 : 1, 1);
-    if (art.tobiasActions.complete && art.tobiasActions.naturalWidth) drawActionFrame(art.tobiasActions, row, column, h * 1.12, h);
-    else if (art.tobias.complete && art.tobias.naturalWidth) ctx.drawImage(art.tobias, -w / 2 + lean, -h, w, h);
-    else {
-      ctx.fillStyle = "#e8b900"; ctx.fillRect(-w * 0.30 + lean, -h * 0.76, w * 0.62, h * 0.42);
-      ctx.fillStyle = "#34221d"; ctx.fillRect(-w * 0.20 + lean, -h, w * 0.42, h * 0.24);
-      ctx.fillStyle = "#255c85"; ctx.fillRect(-w * 0.28 + lean, -h * 0.35, w * 0.58, h * 0.28);
+    const hiddenFlash = player.invulnerable > 0 && Math.floor(gameTime * 24) % 2 === 0;
+    if (!hiddenFlash) {
+      ctx.save(); ctx.translate(screenX(player.x), foot + bob); ctx.scale(player.face < 0 ? -1 : 1, 1);
+      if (art.tobiasActions.complete && art.tobiasActions.naturalWidth) {
+        drawActionFrame(art.tobiasActions, row, column, h * 1.12, h);
+        drawPlayerLogo(row, column, h, s);
+      } else {
+        ctx.fillStyle = "#e8b900"; ctx.fillRect(-h * 0.28, -h * 0.75, h * 0.56, h * 0.38);
+        ctx.fillStyle = "#34221d"; ctx.fillRect(-h * 0.20, -h, h * 0.40, h * 0.24);
+        ctx.fillStyle = "#255c85"; ctx.fillRect(-h * 0.26, -h * 0.37, h * 0.52, h * 0.28);
+      }
+      ctx.restore();
     }
-    ctx.restore();
-    ctx.save(); ctx.globalAlpha = flashing ? 0.58 : 1; ctx.textAlign = "center";
-    ctx.font = "900 " + Math.max(8, Math.round(10 * s)) + "px ui-monospace, monospace"; ctx.lineWidth = 2 * s; ctx.strokeStyle = "#59431a"; ctx.fillStyle = "#fff8d6";
-    const kickShift = row === 2 ? (column === 1 ? 0.28 : column === 2 ? 0.13 : 0) : 0;
-    const shirtX = screenX(player.x) + lean * player.face - player.face * h * kickShift;
-    const shirtY = foot - h * (row === 2 && column === 1 ? 0.615 : row === 2 && column === 2 ? 0.57 : 0.535);
-    ctx.strokeText("UKA", shirtX, shirtY);
-    ctx.fillText("UKA", shirtX, shirtY); ctx.restore();
-    if (isActive && attack) drawAttackArc(attack, foot, s);
     if (player.blocking) {
       ctx.strokeStyle = player.parry > 0 ? "rgba(255,240,135,.94)" : "rgba(153,213,255,.78)"; ctx.lineWidth = player.parry > 0 ? 3 : 2;
       ctx.beginPath(); ctx.arc(screenX(player.x), foot - h * 0.60, 40 * s, -1.2, 1.2); ctx.stroke();
@@ -546,19 +550,6 @@
       ctx.fillStyle = "rgba(202,239,255," + (0.35 - i * 0.07) + ")";
       ctx.fillRect(screenX(player.x) - player.face * i * 12 * s - 2, foot - 20 * s, 5 * s, 3 * s);
     }
-  }
-  function drawAttackArc(attack, foot, s) {
-    const cx = screenX(player.x) + player.face * attack.range * 0.53 * s, cy = foot - 81 * s;
-    if (attack.kind === "special") {
-      const radius = 38 + attack.time / attack.activeEnd * 80;
-      ctx.strokeStyle = "rgba(255,232,136,.88)"; ctx.lineWidth = Math.max(2, 6 * s);
-      ctx.beginPath(); ctx.arc(screenX(player.x), foot - 67 * s, radius * s, 0, Math.PI * 2); ctx.stroke(); return;
-    }
-    ctx.strokeStyle = attack.kind === "kick" ? "rgba(255,161,118,.95)" : "rgba(211,248,255,.96)";
-    ctx.lineWidth = attack.kind === "kick" ? 5 * s : 3 * s;
-    ctx.beginPath(); ctx.moveTo(screenX(player.x) + player.face * 17 * s, cy + 13 * s);
-    ctx.lineTo(cx, cy + (attack.kind === "kick" ? 4 : -8) * s); ctx.lineTo(cx + player.face * 17 * s, cy - 3 * s); ctx.stroke();
-    ctx.fillStyle = attack.kind === "kick" ? "#ffc178" : "#efffff"; ctx.fillRect(cx - 4 * s, cy - 6 * s, 9 * s, 9 * s);
   }
   function drawBar(cx, y, width, height, ratio, color, back) {
     ctx.fillStyle = back; ctx.fillRect(cx - width / 2, y, width, height);

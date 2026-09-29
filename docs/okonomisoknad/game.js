@@ -14,6 +14,7 @@
     rotor: makeImage("vindmolle-brawler.png"),
     tobiasActions: makeImage("tobias-actions.png"),
     rotorActions: makeImage("vindmolle-actions.png"),
+    aletteActions: makeImage("alette-actions.png"),
     reindeer: makeImage("rein-npc.png")
   };
   const overlay = document.getElementById("game-overlay");
@@ -38,11 +39,11 @@
     runner: { hp: 2, speed: 108, damage: 1, label: "ROTOR-RUSHER", scale: 0.93, windup: 0.50, range: 105, score: 120 },
     drifter: { hp: 3, speed: 68, damage: 1, label: "VINDMØLLEFOLK", scale: 1, windup: 0.64, range: 110, score: 170 },
     brute: { hp: 6, speed: 47, damage: 1, label: "SNØBRØYTER", scale: 1.15, windup: 0.80, range: 125, score: 300 },
-    boss: { hp: 20, speed: 67, damage: 2, label: "VINDKONGEN", scale: 1.48, windup: 0.95, range: 178, score: 1500 }
+    boss: { hp: 20, speed: 67, damage: 2, label: "ALETTE SCHREINER", scale: 1.48, windup: 0.95, range: 178, score: 1500 }
   };
 
   let state = "ready", player, enemies = [], particles = [], floaters = [], pickups = [];
-  let cameraX = 0, gateX = 405, currentWave = 1, allCleared = false, score = 0;
+  let cameraX = 0, currentWave = 1, allCleared = false, score = 0;
   let bestScore = readBest(), gameTime = 0, lastFrame = performance.now();
   let hitStop = 0, shake = 0, flash = 0, stageNotice = { text: "", timer: 0 };
   let bufferedAttack = null, attackBufferTimer = 0;
@@ -80,9 +81,7 @@
     currentWave = number;
     const plan = wavePlans[number], startX = firstX === undefined ? 520 : firstX;
     enemies = plan.map((spec) => createEnemy(spec.type, startX + spec.offset, spec.z));
-    const farthestEnemyX = startX + Math.max(...plan.map((spec) => spec.offset));
-    gateX = Math.max(player.x + 92, farthestEnemyX - 285);
-    notice(number === 4 ? "BOSS: VINDKONGEN" : "BØLGE " + number + " / 4", 2.25);
+    notice(number === 4 ? "BOSS: ALETTE SCHREINER" : "BØLGE " + number + " / 4", 2.25);
     updateReadouts();
   }
   function resetGame() {
@@ -103,10 +102,10 @@
       overlayText.textContent = "Trykk P eller fortsett-knappen når du er klar."; overlayButton.textContent = "Fortsett";
     } else if (mode === "won") {
       overlayKicker.textContent = "OPPDRAG FULLFØRT"; overlayTitle.textContent = "Reinen er trygg.";
-      overlayText.textContent = "Vindkongen er slått ut. Du fikk " + score + " poeng" + (score >= bestScore ? " og ny rekord!" : ".") + " Vil du ta en runde til?";
+      overlayText.textContent = "Alette Schreiner er slått ut. Du fikk " + score + " poeng" + (score >= bestScore ? " og ny rekord!" : ".") + " Vil du ta en runde til?";
       overlayButton.textContent = "Spill igjen";
     } else if (mode === "lost") {
-      overlayKicker.textContent = "GAME OVER"; overlayTitle.textContent = "Vindmøllefolket vant runden.";
+      overlayKicker.textContent = "GAME OVER"; overlayTitle.textContent = currentWave >= 4 ? "Alette vant runden." : "Vindmøllefolket vant runden.";
       overlayText.textContent = "Prøv å blokkere idet angrepsvarselet blinker, og dash til en bedre posisjon.";
       overlayButton.textContent = "Prøv igjen";
     }
@@ -212,14 +211,14 @@
     if (direction === "right") player.x += 12;
     if (direction === "up") player.z -= 0.016;
     if (direction === "down") player.z += 0.016;
-    player.x = Math.max(66, Math.min(gateX, player.x));
+    player.x = Math.max(66, Math.min(WORLD_END - 75, player.x));
     player.z = Math.max(LOW_Z, Math.min(HIGH_Z, player.z));
     player.step += 1.25; player.walkPulse = 0.22;
   }
   function spawnWaveAfterClear() {
     if (enemies.some((enemy) => !enemy.dead)) return;
     if (currentWave >= 4) {
-      if (!allCleared) { allCleared = true; gateX = WORLD_END - 100; notice("BARRIEREN ER NEDE · REDD REINEN", 3); score += 600; updateReadouts(); }
+      if (!allCleared) { allCleared = true; notice("VEIEN ER ÅPEN · REDD REINEN", 3); score += 600; updateReadouts(); }
       return;
     }
     const next = currentWave + 1;
@@ -375,9 +374,8 @@
       }
       if (ax !== 0 || az !== 0) player.step += dt * (player.dashTimer > 0 ? 22 : 11);
     }
-    player.x = Math.max(66, Math.min(WORLD_END - 75, Math.min(gateX, player.x)));
+    player.x = Math.max(66, Math.min(WORLD_END - 75, player.x));
     player.z = Math.max(LOW_Z, Math.min(HIGH_Z, player.z));
-    if (player.x >= gateX - 2 && !allCleared && stageNotice.timer <= 0.15) notice("RYDD BØLGEN FOR Å KOMME VIDERE", 0.6);
 
     applyPlayerHits(); updateEnemies(dt); updatePickups(dt); spawnWaveAfterClear();
     if (bufferedAttack && attackBufferTimer > 0 && player.stun <= 0 && player.dashTimer <= 0 && (!player.attack || player.attack.time >= player.attack.duration - 0.13)) {
@@ -448,28 +446,9 @@
     ctx.fillStyle = "#ffe3a2"; ctx.fillRect(x - 4 * s, foot - 62 * s, 8 * s, 8 * s);
     ctx.fillStyle = "rgba(255,228,160,.19)"; ctx.beginPath(); ctx.arc(x, foot - 58 * s, 17 * s, 0, Math.PI * 2); ctx.fill();
   }
-  function drawStageGate() {
-    if (allCleared) return;
-    const x = screenX(gateX); if (x < -20 || x > W + 20) return;
-    ctx.save(); ctx.strokeStyle = "rgba(67,91,97,.62)"; ctx.lineWidth = 3; ctx.beginPath();
-    ctx.moveTo(x, HORIZON + 45); ctx.lineTo(x, H - 6); ctx.stroke();
-    for (let i = 0; i < 5; i += 1) {
-      const z = 0.18 + i * 0.16, y = zToY(z), s = scaleAt(z);
-      ctx.fillStyle = "#607780"; ctx.fillRect(x - 5 * s, y - 23 * s, 10 * s, 24 * s);
-      ctx.fillStyle = "#f3d278"; ctx.fillRect(x - 6 * s, y - 25 * s, 12 * s, 4 * s);
-    }
-    ctx.setLineDash([8, 7]); ctx.strokeStyle = "rgba(235,174,87,.62)"; ctx.beginPath();
-    ctx.moveTo(x, HORIZON + 56); ctx.lineTo(x, H - 9); ctx.stroke(); ctx.setLineDash([]); ctx.restore();
-  }
   function drawReindeer() {
     const x = screenX(GOAL_X), z = 0.58, y = zToY(z), s = scaleAt(z);
     ctx.fillStyle = allCleared ? "rgba(85,140,93,.2)" : "rgba(38,59,63,.33)"; ctx.fillRect(x - 56 * s, y - 2 * s, 112 * s, 18 * s);
-    if (!allCleared) {
-      ctx.fillStyle = "#465c61"; ctx.fillRect(x - 49 * s, y - 42 * s, 4 * s, 42 * s); ctx.fillRect(x + 45 * s, y - 42 * s, 4 * s, 42 * s);
-      ctx.fillStyle = "#d9e7eb"; ctx.fillRect(x - 49 * s, y - 43 * s, 98 * s, 5 * s);
-      ctx.fillStyle = "rgba(13,26,31,.82)"; ctx.font = "bold " + Math.round(9 * s) + "px ui-monospace, monospace"; ctx.textAlign = "center";
-      ctx.fillText("RYDD BØLGEN", x, y - 52 * s);
-    }
     if (art.reindeer.complete && art.reindeer.naturalWidth) {
       const rw = 90 * s, rh = rw * (art.reindeer.naturalHeight / art.reindeer.naturalWidth), bob = allCleared ? Math.sin(gameTime * 5) * 2 : 0;
       ctx.drawImage(art.reindeer, x - rw / 2, y - rh + bob, rw, rh);
@@ -496,7 +475,8 @@
       ctx.fillStyle = "#ff775c"; ctx.font = "900 " + Math.round(15 * s) + "px ui-monospace, monospace"; ctx.textAlign = "center"; ctx.fillText("!", 0, -h - 8 * s);
     }
     if (enemy.hurt > 0 && Math.floor(gameTime * 32) % 2 === 0) ctx.globalAlpha *= 0.42;
-    if (art.rotorActions.complete && art.rotorActions.naturalWidth) {
+    const actionArt = enemy.type === "boss" ? art.aletteActions : art.rotorActions;
+    if (actionArt.complete && actionArt.naturalWidth) {
       let row = 0, column = 0;
       if (enemy.mode === "tell") {
         row = enemy.attackStyle === "kick" ? 2 : 1;
@@ -507,15 +487,20 @@
       } else if (!enemy.dead && enemy.mode === "approach") {
         column = 1 + (Math.floor(enemy.step / Math.PI) % 2);
       }
-      drawActionFrame(art.rotorActions, row, column, h * 1.04, h);
-    } else if (art.rotor.complete && art.rotor.naturalWidth) ctx.drawImage(art.rotor, -w / 2, -h, w, h);
-    else {
+      drawActionFrame(actionArt, row, column, h * 1.04, h);
+    } else if (enemy.type !== "boss" && art.rotor.complete && art.rotor.naturalWidth) ctx.drawImage(art.rotor, -w / 2, -h, w, h);
+    else if (enemy.type === "boss") {
+      ctx.fillStyle = "#33302e"; ctx.fillRect(-w * 0.30, -h * 0.78, w * 0.60, h * 0.68);
+      ctx.fillStyle = "#d5b394"; ctx.fillRect(-w * 0.18, -h * 1.02, w * 0.36, h * 0.27);
+      ctx.fillStyle = "#343234"; ctx.fillRect(-w * 0.22, -h * 1.10, w * 0.44, h * 0.13);
+      ctx.fillStyle = "#dbe6e2"; ctx.fillRect(-w * 0.11, -h * 0.91, w * 0.08, h * 0.035); ctx.fillRect(w * 0.03, -h * 0.91, w * 0.08, h * 0.035);
+    } else {
       ctx.fillStyle = "#086174"; ctx.fillRect(-w * 0.33, -h * 0.74, w * 0.66, h * 0.48);
       ctx.fillStyle = "#eeeeec"; ctx.fillRect(-w * 0.15, -h * 0.98, w * 0.30, h * 0.27); ctx.fillRect(-w * 0.045, -h * 1.2, w * 0.09, h * 0.19);
     }
     if (enemy.type === "boss" && !enemy.dead) {
       ctx.restore(); drawBar(x, foot - h - 8, 80 * scaleAt(enemy.z), 6, enemy.hp / enemy.maxHp, "#ee6955", "rgba(14,26,32,.75)");
-      ctx.fillStyle = "#fff1dc"; ctx.font = "bold 9px ui-monospace, monospace"; ctx.textAlign = "center"; ctx.fillText("VINDKONGEN", x, foot - h - 14); return;
+      ctx.fillStyle = "#fff1dc"; ctx.font = "bold 9px ui-monospace, monospace"; ctx.textAlign = "center"; ctx.fillText("ALETTE SCHREINER", x, foot - h - 14); return;
     }
     if (!enemy.dead && enemy.hp < enemy.maxHp) {
       ctx.restore(); drawBar(x, foot - h - 7, 38 * scaleAt(enemy.z), 4, enemy.hp / enemy.maxHp, "#f18870", "rgba(14,26,32,.7)"); return;
@@ -613,26 +598,28 @@
     ctx.globalAlpha = 1;
   }
   function drawHud() {
-    ctx.fillStyle = "rgba(12,26,31,.88)"; ctx.fillRect(15, 14, 264, 88);
-    ctx.strokeStyle = "rgba(212,240,225,.24)"; ctx.strokeRect(15.5, 14.5, 263, 87);
-    ctx.fillStyle = "#a8e9ba"; ctx.font = "900 13px ui-monospace, monospace"; ctx.textAlign = "left";
-    ctx.fillText("TOBIAS  //  KIRKENES", 28, 34); ctx.fillStyle = "#eaf5f1"; ctx.font = "bold 11px ui-monospace, monospace"; ctx.fillText("LIV", 28, 55);
+    ctx.fillStyle = "rgba(3,15,21,.97)"; ctx.fillRect(15, 14, 330, 112);
+    ctx.strokeStyle = "rgba(235,248,241,.68)"; ctx.lineWidth = 2; ctx.strokeRect(16, 15, 328, 110);
+    ctx.fillStyle = "#c8ffdb"; ctx.font = "900 16px ui-monospace, monospace"; ctx.textAlign = "left";
+    ctx.fillText("TOBIAS  //  KIRKENES", 28, 37); ctx.fillStyle = "#ffffff"; ctx.font = "bold 13px ui-monospace, monospace"; ctx.fillText("LIV", 28, 61);
     for (let i = 0; i < player.maxHp; i += 1) {
-      ctx.fillStyle = i < player.hp ? "#ff8e7a" : "#42565a"; ctx.fillRect(57 + i * 20, 45, 15, 12);
-      if (i < player.hp) { ctx.fillStyle = "#ffd4c7"; ctx.fillRect(60 + i * 20, 47, 5, 3); }
+      ctx.fillStyle = i < player.hp ? "#ff9d8b" : "#52636a"; ctx.fillRect(63 + i * 22, 47, 17, 15);
+      if (i < player.hp) { ctx.fillStyle = "#fff0e9"; ctx.fillRect(66 + i * 22, 49, 6, 4); }
     }
-    ctx.fillStyle = "#abc0bb"; ctx.fillText("SPESIAL", 28, 78); ctx.fillStyle = "rgba(255,255,255,.14)"; ctx.fillRect(94, 68, 155, 11);
-    ctx.fillStyle = player.special >= 45 ? "#f4cc69" : "#69c5df"; ctx.fillRect(96, 70, 151 * (player.special / 100), 7);
-    ctx.fillStyle = "#dff3eb"; ctx.font = "bold 9px ui-monospace, monospace"; ctx.fillText(Math.floor(player.special) + "%", 254, 78);
-    ctx.fillStyle = "rgba(12,26,31,.82)"; ctx.fillRect(W - 174, 14, 159, 43); ctx.strokeStyle = "rgba(212,240,225,.18)"; ctx.strokeRect(W - 173.5, 14.5, 158, 42);
-    ctx.fillStyle = "#eff7f2"; ctx.font = "900 11px ui-monospace, monospace"; ctx.textAlign = "right"; ctx.fillText("BØLGE " + Math.min(currentWave, 4) + " / 4", W - 27, 32);
-    ctx.fillStyle = "#b5c5bf"; ctx.font = "bold 10px ui-monospace, monospace"; ctx.fillText(String(score).padStart(6, "0") + " P", W - 27, 48);
+    ctx.fillStyle = "#ffffff"; ctx.font = "bold 13px ui-monospace, monospace"; ctx.fillText("SPESIAL", 28, 96);
+    ctx.fillStyle = "rgba(255,255,255,.24)"; ctx.fillRect(94, 83, 185, 15);
+    ctx.fillStyle = player.special >= 45 ? "#f4cc69" : "#69d5f0"; ctx.fillRect(96, 85, 181 * (player.special / 100), 11);
+    ctx.fillStyle = "#ffffff"; ctx.font = "900 12px ui-monospace, monospace"; ctx.fillText(Math.floor(player.special) + "%", 286, 96);
+    ctx.fillStyle = "rgba(3,15,21,.97)"; ctx.fillRect(W - 207, 14, 192, 55); ctx.strokeStyle = "rgba(235,248,241,.68)"; ctx.strokeRect(W - 206, 15, 190, 53);
+    ctx.fillStyle = "#ffffff"; ctx.font = "900 14px ui-monospace, monospace"; ctx.textAlign = "right"; ctx.fillText("BØLGE " + Math.min(currentWave, 4) + " / 4", W - 27, 37);
+    ctx.fillStyle = "#e2eee9"; ctx.font = "bold 12px ui-monospace, monospace"; ctx.fillText(String(score).padStart(6, "0") + " P", W - 27, 56);
     const boss = enemies.find((enemy) => enemy.type === "boss" && !enemy.dead);
     if (boss) {
-      ctx.fillStyle = "rgba(13,26,31,.84)"; ctx.fillRect(W / 2 - 180, 15, 360, 34);
-      ctx.fillStyle = "#f2eee1"; ctx.font = "bold 10px ui-monospace, monospace"; ctx.textAlign = "center";
-      ctx.fillText("VINDKONGEN" + (boss.hp < boss.maxHp * 0.48 ? " · RASER" : ""), W / 2, 27);
-      drawBar(W / 2, 37, 326, 7, boss.hp / boss.maxHp, boss.hp < boss.maxHp * 0.48 ? "#ff755f" : "#ecaf62", "#29383b");
+      ctx.fillStyle = "rgba(3,15,21,.97)"; ctx.fillRect(W / 2 - 220, 14, 440, 51);
+      ctx.strokeStyle = "rgba(235,248,241,.68)"; ctx.strokeRect(W / 2 - 219, 15, 438, 49);
+      ctx.fillStyle = "#ffffff"; ctx.font = "900 14px ui-monospace, monospace"; ctx.textAlign = "center";
+      ctx.fillText("ALETTE SCHREINER" + (boss.hp < boss.maxHp * 0.48 ? " · RASER" : ""), W / 2, 35);
+      drawBar(W / 2, 45, 410, 11, boss.hp / boss.maxHp, boss.hp < boss.maxHp * 0.48 ? "#ff755f" : "#ecaf62", "#29383b");
     }
     if (player.comboCount > 1 && player.comboTimer > 0) {
       ctx.textAlign = "center"; ctx.font = "900 19px ui-monospace, monospace"; ctx.fillStyle = "rgba(18,31,34,.85)";
@@ -653,7 +640,6 @@
     ctx.translate(sx, sy); drawBackground();
     for (let i = 0; i < 10; i += 1) drawPine(i * 344 + 108, 0.13 + (i % 3) * 0.025, i % 2 ? "#315e57" : "#244e52");
     for (let i = 0; i < 9; i += 1) drawStreetLamp(i * 405 + 205, 0.30 + (i % 2) * 0.46);
-    drawStageGate();
     const drawables = enemies.filter((enemy) => !enemy.dead || enemy.removeTimer > 0).map((enemy) => ({ z: enemy.z, type: "enemy", value: enemy }));
     drawables.push({ z: 0.58, type: "reindeer", value: null });
     drawables.push({ z: player.z, type: "player", value: player }); drawables.sort((a, b) => a.z - b.z);

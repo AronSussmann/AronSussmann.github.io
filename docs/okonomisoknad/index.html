@@ -3,175 +3,71 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f7f8f5">
-  <meta name="description" content="Et 2,5D beat ’em up i pixelart-Kirkenes: hjelp Tobias å slå vindmøllefolket og redde reinen.">
-  <title>Tobias vs. vindmøllefolket — Kirkenes Beat ’em up</title>
+  <meta name="theme-color" content="#111b1e">
+  <meta name="description" content="Tobias mot Alette Schreiner: et 2,5D beat ’em up i pixelart-Kirkenes. Søknadstekst nederst.">
+  <title>Tobias mot Alette Schreiner — Kirkenes Beat ’em up</title>
   <style>
-    :root {
-      color-scheme: light;
-      --ink: #151b19;
-      --muted: #68716c;
-      --paper: #f7f8f5;
-      --white: #fff;
-      --line: #e5e9e4;
-      --green: #0e6848;
-      --green-bright: #2b9c68;
-      --green-pale: #eaf4ed;
-      --red: #d82f32;
-      --navy: #101b1a;
-      --navy-soft: #172421;
-      --shadow: 0 16px 48px rgba(25, 44, 35, .08);
-    }
+    :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
-    body { margin: 0; color: var(--ink); background: var(--paper); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { margin: 0; color: #15201d; background: #f6f7f4; }
     button, a { font: inherit; }
     button { cursor: pointer; }
     [hidden] { display: none !important; }
-    .gate { min-height: 100svh; display: grid; place-items: center; background: #fff; }
-    .bruh {
-      min-width: min(58vw, 430px); min-height: min(32vh, 220px); padding: 30px 56px;
-      border: 0; border-radius: 5px; background: var(--red); color: white;
-      font-size: clamp(4rem, 13vw, 9rem); font-weight: 900; letter-spacing: -.09em;
-      box-shadow: 0 14px 36px rgba(216, 47, 50, .2); transition: transform .2s, box-shadow .2s;
-    }
-    .bruh:hover { transform: translateY(-4px); box-shadow: 0 19px 42px rgba(216, 47, 50, .3); }
-    .bruh:focus-visible, .reveal-button:focus-visible, a:focus-visible { outline: 4px solid #f5b700; outline-offset: 5px; }
-    .rick { min-height: 100svh; display: grid; place-items: center; padding: 28px; background: #090b0a; color: white; text-align: center; }
+    .gate, .reveal-wrap { min-height: 100svh; display: grid; place-items: center; background: #fff; }
+    .bruh { min-width: min(58vw, 430px); min-height: min(32vh, 220px); padding: 30px 56px; border: 0; border-radius: 5px; background: #d82f32; color: #fff; font-size: clamp(4rem, 13vw, 9rem); font-weight: 900; letter-spacing: -.09em; }
+    .bruh:focus-visible, .reveal-button:focus-visible, button:focus-visible { outline: 4px solid #f5b700; outline-offset: 4px; }
+    .rick { min-height: 100svh; display: grid; place-items: center; padding: 24px; background: #090b0a; color: #fff; text-align: center; }
     .rick-inner { width: min(700px, 100%); }
-    .rick-label { margin: 0 0 18px; color: #b8c1bb; font-size: .74rem; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; }
-    .video-frame { position: relative; overflow: hidden; width: 100%; aspect-ratio: 16 / 9; background: #151a17; border: 1px solid #303833; }
+    .rick-label { margin: 0 0 18px; color: #d3ddd6; font-size: .84rem; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+    .video-frame { width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border: 1px solid #303833; background: #151a17; }
     .video-frame iframe { width: 100%; height: 100%; border: 0; }
-    .rick-progress { height: 3px; margin-top: 20px; overflow: hidden; background: #333b36; }
-    .rick-progress::after { display: block; width: 100%; height: 100%; background: #49bd7e; content: ""; transform-origin: left; animation: run 5s linear forwards; }
-    @keyframes run { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-    .reveal-wrap { min-height: 100svh; display: grid; place-items: center; padding: 32px; background: #fff; text-align: center; }
-    .reveal-button { padding: 19px 31px; border: 1px solid #d9dfda; border-radius: 99px; background: white; color: var(--ink); font-size: 1.1rem; font-weight: 750; box-shadow: var(--shadow); transition: .2s; }
-    .reveal-button:hover { border-color: var(--green); color: var(--green); transform: translateY(-2px); }
-    .portfolio { min-height: 100vh; background: var(--paper); }
-    .topbar { height: 76px; display: flex; align-items: center; justify-content: flex-start; gap: 24px; padding: 0 clamp(22px, 5vw, 76px); border-bottom: 1px solid var(--line); background: rgba(255,255,255,.85); }
-    .brand { display: flex; align-items: center; gap: 11px; color: var(--ink); text-decoration: none; font-size: .9rem; font-weight: 750; letter-spacing: -.02em; }
-    .brand-mark { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; background: var(--green); color: white; font-family: Georgia, serif; font-size: 1.05rem; }
-    .hero { position: relative; overflow: hidden; display: grid; grid-template-columns: 1.2fr .8fr; align-items: center; gap: 48px; padding: 80px clamp(22px, 8vw, 128px) 74px; color: #f3f7f3; background: var(--navy); }
-    .hero::after { position: absolute; top: -190px; right: -140px; width: 540px; height: 540px; border: 1px solid rgba(129,191,158,.16); border-radius: 50%; box-shadow: 0 0 0 52px rgba(129,191,158,.035), 0 0 0 104px rgba(129,191,158,.025); content: ""; pointer-events: none; }
-    .hero-copy, .hero-panel { position: relative; z-index: 1; }
-    .eyebrow { display: inline-flex; align-items: center; gap: 9px; margin: 0 0 22px; color: #a9c9b5; font-size: .72rem; font-weight: 750; letter-spacing: .19em; text-transform: uppercase; }
-    .eyebrow::before { width: 21px; height: 1px; background: #6caa86; content: ""; }
-    h1 { max-width: 740px; margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: clamp(3rem, 6.6vw, 6.3rem); font-weight: 400; letter-spacing: -.065em; line-height: .99; }
-    h1 em { color: #8fd0a5; font-style: normal; }
-    .hero-lede { max-width: 520px; margin: 25px 0 0; color: #b9c5bf; font-size: clamp(1rem, 1.5vw, 1.15rem); line-height: 1.75; }
-    .badge-row { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 29px; }
-    .badge { padding: 8px 12px; border: 1px solid rgba(197,220,204,.18); border-radius: 40px; color: #d7e4db; font-size: .74rem; }
-    .hero-panel { min-height: 370px; padding: 23px 22px 17px; border: 1px solid rgba(195,219,202,.18); border-radius: 7px; background: linear-gradient(145deg, rgba(255,255,255,.055), rgba(255,255,255,.015)); box-shadow: 0 24px 70px rgba(0,0,0,.17); }
-    .mission-card { display: flex; flex-direction: column; justify-content: space-between; min-height: 300px; padding: 25px; border: 1px solid rgba(195,219,202,.22); border-radius: 7px; background: radial-gradient(circle at 85% 10%, rgba(62,129,94,.22), transparent 38%), linear-gradient(145deg, #182a28, #111b1c); box-shadow: 0 24px 70px rgba(0,0,0,.2); }
-    .mission-top { display: flex; justify-content: space-between; color: #c0cbc4; font-size: .72rem; letter-spacing: .08em; }
-    .mission-card h2 { margin: 25px 0 8px; color: #f3f7f3; font-family: Georgia, serif; font-size: 1.9rem; font-weight: 400; letter-spacing: -.04em; }
-    .mission-card p { margin: 0; color: #9daea4; font-size: .83rem; line-height: 1.65; }
-    .mission-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 9px; margin-top: 25px; }
-    .mission-stat { padding: 12px; border: 1px solid rgba(195,219,202,.14); background: rgba(255,255,255,.035); }
-    .mission-stat strong { display: block; color: #9addad; font: 800 .72rem ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .06em; }
-    .mission-stat span { display: block; margin-top: 5px; color: #b5c2bb; font-size: .68rem; }
-    .panel-top { display: flex; justify-content: space-between; gap: 15px; color: #c0cbc4; font-size: .73rem; }
-    .live { display: inline-flex; align-items: center; gap: 7px; color: #8fd0a5; }
-    .live::before { width: 6px; height: 6px; border-radius: 50%; background: #50be7e; content: ""; box-shadow: 0 0 10px #50be7e; }
-    .chart-title { margin: 24px 0 3px; color: #f3f7f3; font-family: Georgia, serif; font-size: 1.6rem; }
-    .chart-subtitle { color: #87948c; font-size: .73rem; }
-    .chart { width: 100%; height: 130px; margin-top: 5px; overflow: visible; }
-    .chart-grid { stroke: rgba(255,255,255,.1); stroke-dasharray: 3 5; }
-    .chart-zero { stroke: rgba(224,238,227,.52); stroke-width: 1.2; }
-    .axis-label, .plot-note { fill: #839089; font-size: 9px; font-family: inherit; }
-    .plot-note { opacity: 0; font-size: 8px; font-weight: 700; letter-spacing: .08em; transition: opacity .2s; }
-    .chart-line { fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-width: 3; stroke-dasharray: 1; stroke-dashoffset: 1; opacity: 0; transition: stroke-dashoffset 1.3s cubic-bezier(.2,.8,.2,1), opacity .2s; }
-    .line-start { stroke: #73ca91; stroke-dashoffset: 0; opacity: .75; }
-    .line-aron { stroke: #7ce1a0; }
-    .line-other { stroke: #ff8174; }
-    .note-aron { fill: #8fe7a9; }
-    .note-other { fill: #ffaaa0; }
-    .hero-panel[data-choice="aron"] .line-start, .hero-panel[data-choice="other"] .line-start { opacity: 0; stroke-dashoffset: 1; }
-    .hero-panel[data-choice="aron"] .line-aron, .hero-panel[data-choice="other"] .line-other { opacity: 1; stroke-dashoffset: 0; }
-    .hero-panel[data-choice="aron"] .note-aron, .hero-panel[data-choice="other"] .note-other { opacity: 1; }
-    .choice-row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 12px; }
-    .choice-button { min-height: 38px; padding: 8px 11px; border: 1px solid rgba(195,219,202,.22); border-radius: 4px; background: rgba(255,255,255,.04); color: #d7e4db; font-size: .75rem; font-weight: 700; transition: .18s; }
-    .choice-button:hover, .choice-button[aria-pressed="true"] { border-color: #70cb90; background: rgba(112,203,144,.13); color: #a8e4b9; }
-    .choice-button[data-choice-button="other"][aria-pressed="true"] { border-color: #ff8174; background: rgba(255,129,116,.12); color: #ffaaa0; }
-    .choice-button:focus-visible { outline: 3px solid #f5b700; outline-offset: 3px; }
-    .chart-result { min-height: 1.3em; margin: 8px 0 0; color: #aebbb2; font-size: .68rem; }
-    .section { padding: 74px clamp(22px, 8vw, 128px); }
-    .game-section { padding: 70px clamp(18px, 5vw, 76px) 66px; color: #edf4ef; background: linear-gradient(160deg, #142328, #10191c 70%); }
-    .game-heading { display: flex; align-items: end; justify-content: space-between; gap: 25px; margin-bottom: 25px; }
-    .game-heading h2 { margin: 0; font-family: Georgia, serif; font-size: clamp(2rem, 4vw, 3.5rem); font-weight: 400; letter-spacing: -.055em; }
-    .game-heading p:last-child { max-width: 390px; margin: 0; color: #afbfbb; font-size: .9rem; line-height: 1.7; }
-    .game-shell { position: relative; overflow: hidden; width: 100%; aspect-ratio: 16 / 9; border: 5px solid #2a4142; border-radius: 7px; background: #83aee5; box-shadow: 0 22px 70px rgba(0,0,0,.38), 0 0 0 1px rgba(255,255,255,.05); }
+    .rick-progress { height: 4px; margin-top: 18px; overflow: hidden; background: #39423c; }
+    .rick-progress::after { display: block; width: 100%; height: 100%; background: #49bd7e; content: ""; transform: scaleX(0); transform-origin: left; animation: run 5s linear forwards; }
+    @keyframes run { to { transform: scaleX(1); } }
+    .reveal-wrap { padding: 28px; }
+    .reveal-button { padding: 19px 31px; border: 1px solid #d9dfda; border-radius: 99px; background: #fff; color: #151b19; font-size: 1.1rem; font-weight: 750; box-shadow: 0 16px 48px rgba(25,44,35,.08); }
+    .portfolio { min-height: 100vh; background: #111b1e; }
+    .game-section { min-height: 100vh; padding: clamp(20px, 4vw, 48px) clamp(12px, 3vw, 42px) 28px; color: #f7fbf8; background: #111b1e; }
+    .game-inner { width: min(1280px, 100%); margin: 0 auto; }
+    .game-title { margin: 0 0 20px; color: #fff; font-size: clamp(1.7rem, 4vw, 3.2rem); font-weight: 800; letter-spacing: -.045em; line-height: 1.08; }
+    .game-shell { position: relative; overflow: hidden; width: 100%; aspect-ratio: 16 / 9; border: 3px solid #92aaa4; border-radius: 5px; background: #83aee5; box-shadow: 0 16px 40px rgba(0,0,0,.35); }
     #kirkenes-game { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
-    .game-overlay { position: absolute; inset: 0; display: grid; place-items: center; padding: 18px; background: rgba(7,17,24,.42); }
-    .game-overlay[hidden] { display: none; }
-    .game-overlay-card { width: min(490px, 94%); padding: clamp(18px, 4vw, 30px); border: 2px solid rgba(211,235,227,.52); border-radius: 5px; background: rgba(12,26,31,.94); text-align: center; box-shadow: 0 12px 38px rgba(0,0,0,.3); }
-    .game-overlay-kicker { margin: 0 0 11px; color: #9addad; font: 700 .72rem/1.4 ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .18em; }
-    .game-overlay-card h3 { margin: 0; color: white; font: 700 clamp(1.3rem, 3.4vw, 2.2rem)/1.15 ui-monospace, SFMono-Regular, Consolas, monospace; }
-    .game-overlay-card p:not(.game-overlay-kicker) { margin: 14px 0 19px; color: #cad8d2; font-size: .83rem; line-height: 1.6; }
-    .game-overlay-card button, .game-control { min-height: 42px; padding: 10px 15px; border: 2px solid #80d99a; border-radius: 4px; background: #184d39; color: #effff2; font: 700 .78rem ui-monospace, SFMono-Regular, Consolas, monospace; }
-    .game-overlay-card button:hover, .game-control:hover { background: #22684b; }
-    .game-overlay-card button:focus-visible, .game-control:focus-visible { outline: 3px solid #f4ca5b; outline-offset: 3px; }
-    .game-meta { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-top: 14px; color: #c3d0cb; font-size: .74rem; }
-    .game-meta strong { color: #9addad; }
-    .game-meta-stats { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
-    .game-meta button { padding: 7px 10px; border: 1px solid #526762; border-radius: 4px; background: transparent; color: #dbe9e2; font: 700 .68rem ui-monospace, SFMono-Regular, Consolas, monospace; }
-    .game-meta button:hover { border-color: #9addad; color: #9addad; }
-    .game-key-help { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
-    .game-key { display: inline-block; min-width: 26px; margin: 0 2px; padding: 4px 6px; border: 1px solid #60736d; border-radius: 3px; color: #f2f8f3; text-align: center; }
-    .touch-controls { display: none; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-top: 13px; }
-    .game-control { min-width: 45px; padding-inline: 7px; touch-action: none; user-select: none; }
-    .game-control[data-action="special"] { border-color: #e3bd58; background: #51401d; }
-    .game-control[data-action="kick"] { border-color: #eb9876; background: #562b24; }
-    .game-credit { margin: 13px 0 0; color: #93a6a0; font-size: .7rem; }
-    .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 25px; margin-bottom: 27px; }
-    .section-kicker { margin: 0 0 10px; color: var(--green); font-size: .69rem; font-weight: 800; letter-spacing: .19em; text-transform: uppercase; }
-    h2 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: clamp(2rem, 4vw, 3.5rem); font-weight: 400; letter-spacing: -.055em; }
-    .section-heading > p:last-child { max-width: 350px; margin: 0; color: var(--muted); font-size: .9rem; line-height: 1.65; }
-    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-    .card { min-height: 225px; padding: 23px; border: 1px solid var(--line); border-radius: 6px; background: var(--white); box-shadow: 0 6px 20px rgba(25,44,35,.025); }
-    .card-label { margin: 0; color: var(--muted); font-size: .7rem; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
-    .card h3 { margin: 24px 0 10px; font-family: Georgia, serif; font-size: 1.55rem; font-weight: 400; letter-spacing: -.035em; }
-    .card p:last-child { margin: 0; color: var(--muted); font-size: .84rem; line-height: 1.7; }
-    .card-number { color: var(--green); font-family: Georgia, serif; font-size: 2.45rem; }
-    .about-grid { display: grid; grid-template-columns: 1fr .8fr; gap: 17px; }
-    .about-card { display: grid; grid-template-columns: 1fr 180px; align-items: center; gap: 23px; min-height: 225px; padding: 23px; border: 1px solid var(--line); border-radius: 6px; background: white; }
-    .about-card h3 { margin: 9px 0 12px; font-family: Georgia, serif; font-size: 1.55rem; font-weight: 400; }
-    .about-card p { max-width: 590px; margin: 0; color: var(--muted); font-size: .84rem; line-height: 1.7; }
-    .reaction { width: 180px; height: 180px; border-radius: 4px; object-fit: cover; filter: saturate(.88); }
-    .identity { display: flex; flex-direction: column; justify-content: space-between; min-height: 225px; padding: 24px; border-radius: 6px; background: var(--green-pale); }
-    .identity .card-label { color: #367451; }
-    .identity h3 { margin: 27px 0 11px; font-family: Georgia, serif; font-size: 1.75rem; font-weight: 400; letter-spacing: -.04em; }
-    .identity p:last-child { margin: 0; color: #52675a; font-size: .84rem; line-height: 1.65; }
-    .footer { display: flex; justify-content: space-between; gap: 20px; padding: 25px clamp(22px, 8vw, 128px); border-top: 1px solid var(--line); color: var(--muted); font-size: .72rem; }
-    .footer a { color: var(--green); text-decoration: none; }
-    @media (max-width: 860px) {
-      .hero { grid-template-columns: 1fr; gap: 38px; padding-top: 62px; }
-      .hero-panel { max-width: 560px; }
-      .game-heading { align-items: flex-start; flex-direction: column; }
-      .grid { grid-template-columns: repeat(2, 1fr); }
-      .about-grid { grid-template-columns: 1fr; }
-    }
-    @media (max-width: 580px) {
-      .bruh { min-width: 78vw; min-height: 25vh; }
-      .topbar { height: 66px; }
-      .hero { padding-top: 52px; padding-bottom: 52px; }
-      .section { padding-top: 54px; padding-bottom: 54px; }
-      .game-section { padding-top: 54px; padding-bottom: 54px; }
-      .game-shell { border-width: 3px; aspect-ratio: 16 / 9; }
-      .game-meta { align-items: flex-start; flex-direction: column; }
-      .game-meta-stats { gap: 8px 14px; }
-      .section-heading { align-items: flex-start; flex-direction: column; }
-      .grid { grid-template-columns: 1fr; }
-      .card { min-height: 190px; }
-      .about-card { grid-template-columns: 1fr; }
-      .reaction { width: 100%; height: auto; max-height: 300px; object-fit: cover; object-position: center 38%; }
-      .footer { flex-direction: column; }
-    }
+    .game-overlay { position: absolute; inset: 0; display: grid; place-items: center; padding: 16px; background: rgba(3,12,17,.54); }
+    .game-overlay-card { width: min(510px, 94%); padding: clamp(18px, 4vw, 30px); border: 2px solid #d4e5dc; border-radius: 5px; background: rgba(3,15,21,.97); text-align: center; box-shadow: 0 12px 38px rgba(0,0,0,.4); }
+    .game-overlay-kicker { margin: 0 0 10px; color: #baf2ca; font: 800 .8rem/1.4 ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .12em; }
+    .game-overlay-card h2 { margin: 0; color: #fff; font-size: clamp(1.4rem, 3.5vw, 2.35rem); line-height: 1.15; }
+    .game-overlay-card p:not(.game-overlay-kicker) { margin: 14px 0 19px; color: #eef4f0; font-size: clamp(.95rem, 2vw, 1.1rem); line-height: 1.55; }
+    .game-overlay-card button, .game-control { min-height: 44px; padding: 10px 15px; border: 2px solid #a2f0b5; border-radius: 4px; background: #155438; color: #fff; font: 800 .82rem ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .game-overlay-card button:hover, .game-control:hover { background: #206b49; }
+    .game-meta { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 14px; color: #f0f6f2; font-size: .9rem; }
+    .game-key-help { color: #f2f7f4; font-weight: 600; line-height: 1.8; }
+    .game-key { display: inline-block; min-width: 27px; margin: 0 3px; padding: 4px 7px; border: 1px solid #82968e; border-radius: 3px; color: #fff; text-align: center; }
+    .game-meta-stats { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; font-weight: 650; }
+    .game-meta-stats strong { color: #caffd7; font-weight: 850; }
+    .game-meta button { padding: 8px 11px; border: 1px solid #a3b8ae; border-radius: 4px; background: #162427; color: #fff; font: 750 .75rem ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .game-meta button:hover { border-color: #caffd7; }
+    .touch-controls { display: none; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; margin-top: 13px; }
+    .game-control { min-width: 0; padding: 9px 5px; touch-action: none; user-select: none; }
+    .game-control[data-action="special"] { border-color: #f4d278; background: #58471f; }
+    .game-control[data-action="kick"] { border-color: #f3aa8d; background: #60362c; }
+    .application { padding: clamp(38px, 7vw, 78px) 24px; background: #f6f7f4; color: #17211d; }
+    .application-inner { width: min(800px, 100%); margin: 0 auto; }
+    .application-label { margin: 0 0 11px; color: #375747; font-size: .8rem; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+    .application h2 { margin: 0 0 16px; font-size: clamp(1.5rem, 3vw, 2rem); line-height: 1.2; }
+    .application p:last-child { margin: 0; color: #303d36; font-size: clamp(1rem, 2vw, 1.1rem); line-height: 1.8; }
     @media (pointer: coarse), (max-width: 700px) {
-      .touch-controls { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .touch-controls { display: grid; }
       .game-key-help { display: none; }
-      .game-control { min-width: 0; padding: 9px 4px; font-size: .62rem; }
+      .game-meta { align-items: flex-start; flex-direction: column; }
+      .game-meta-stats { gap: 8px 12px; }
+      .game-title { margin-bottom: 14px; }
+    }
+    @media (max-width: 440px) {
+      .bruh { min-width: 78vw; min-height: 25vh; }
+      .game-shell { border-width: 2px; }
+      .game-meta-stats { font-size: .78rem; }
+      .game-control { font-size: .65rem; }
     }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
@@ -199,113 +95,45 @@
     </section>
 
     <article class="portfolio" id="portfolio" hidden>
-      <header class="topbar">
-        <a class="brand" href="#top" aria-label="Aron Süssmann, til toppen"><span class="brand-mark">A</span><span>ARON SÜSSMANN</span></a>
-      </header>
-
-      <section class="hero" id="top">
-        <div class="hero-copy">
-          <p class="eyebrow">2,5D BEAT ’EM UP · KIRKENES</p>
-          <h1>Snøvær i Kirkenes.<br><em>Slå tilbake.</em></h1>
-          <p class="hero-lede">Tobias går til fots gjennom en snødekt by. Gå både sidelengs og inn i dybden, bygg kombinasjoner, parer vindmøllefolket og redd reinen.</p>
-          <div class="badge-row"><span class="badge">DYBDEBEVEGELSE</span><span class="badge">KOMBOER + PARRY</span><span class="badge">BOSSFIGHT</span></div>
-        </div>
-        <div class="mission-card" aria-label="Vinteroppdragets mål">
-          <div class="mission-top"><span>OPPDRAG 01</span><span class="live">KIRKENES</span></div>
-          <div><h2>Redd reinsdyret.</h2><p>Vindmøllefolket har blåst byen ut av kurs. Rydd arenaen til fots, og ta den store bossen til slutt.</p></div>
-          <div class="mission-stats"><div class="mission-stat"><strong>2,5D / SIDE</strong><span>Gå inn og ut av banen</span></div><div class="mission-stat"><strong>COMBO</strong><span>Slå → spark → avslutt</span></div><div class="mission-stat"><strong>PARRY</strong><span>Stopp slaget i siste liten</span></div><div class="mission-stat"><strong>BOSS</strong><span>Vindkongen venter</span></div></div>
-        </div>
-      </section>
-
       <section class="game-section" id="vinteroppdrag" aria-labelledby="game-title">
-        <div class="game-heading">
-          <div><p class="section-kicker" style="color:#9addad">VINTEROPPDRAG / 01</p><h2 id="game-title">Tobias vs. vindmøllefolket</h2></div>
-          <p>Vindmøllene er folk med rotorhoder. Treff dem i riktig dybdebane, hold vakt når de varsler et angrep, og slå tilbake i åpningen.</p>
-        </div>
-        <div class="game-shell">
-          <canvas id="kirkenes-game" width="960" height="540" tabindex="0" aria-label="Pixelart beat ’em up i Kirkenes. Gå med piltastene eller WASD, slå med J, spark med K, bruk spesialangrep med C, dash med mellomrom og blokker med B.">Pixelart beat ’em up: beveg deg med piltastene eller WASD, slå med J, spark med K, bruk spesialangrep med C, dash med mellomrom og blokker med B.</canvas>
-          <div class="game-overlay" id="game-overlay">
-            <div class="game-overlay-card">
-              <p class="game-overlay-kicker" id="game-overlay-kicker">KIRKENES · BEAT ’EM UP</p>
-              <h3 id="game-overlay-title">Slå deg gjennom snøstormen.</h3>
-              <p id="game-overlay-text">Gå sidelengs og inn i dybden. Kjed slag og spark, blokker akkurat før treffet for en parering, og spar spesialmåleren til sjefen.</p>
-              <button id="game-overlay-button" type="button">Gå inn i arenaen</button>
+        <div class="game-inner">
+          <h1 class="game-title" id="game-title">Tobias mot Alette Schreiner</h1>
+          <div class="game-shell">
+            <canvas id="kirkenes-game" width="960" height="540" tabindex="0" aria-label="Pixelart slåssespill i Kirkenes. Gå med piltastene eller WASD, slå med J, spark med K, bruk spesialangrep med C, dash med mellomrom og blokker med B.">Pixelart slåssespill: beveg deg med piltastene eller WASD, slå med J, spark med K, bruk spesialangrep med C, dash med mellomrom og blokker med B.</canvas>
+            <div class="game-overlay" id="game-overlay">
+              <div class="game-overlay-card">
+                <p class="game-overlay-kicker" id="game-overlay-kicker">KIRKENES · BEAT ’EM UP</p>
+                <h2 id="game-overlay-title">Klar for siste runde?</h2>
+                <p id="game-overlay-text">Gå sidelengs og inn i dybden. Slå med J, spark med K, og møt Alette Schreiner i siste runde.</p>
+                <button id="game-overlay-button" type="button">Gå inn i arenaen</button>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="game-meta">
-          <div class="game-key-help"><span class="game-key">WASD</span> gå / dybde <span class="game-key">J</span> slag <span class="game-key">K</span> spark <span class="game-key">C</span> spesial <span class="game-key">SPACE</span> dash <span class="game-key">B</span> blokk/parry <span class="game-key">P</span> pause</div>
-          <div class="game-meta-stats"><span>LIV <strong id="player-lives">10 / 10</strong></span><span>KOMBO <strong id="combo-readout">—</strong></span><span>POENG <strong id="score-readout">0</strong></span><span id="boss-readout" hidden>BOSS <strong>VENTER</strong></span><button type="button" id="sound-toggle" aria-pressed="true">LYD: PÅ</button></div>
-        </div>
-        <div class="touch-controls" aria-label="Berøringskontroller">
-          <button class="game-control" type="button" data-hold="up" aria-label="Gå bakover i dybden">↑ DYBDE</button>
-          <button class="game-control" type="button" data-hold="left" aria-label="Gå til venstre">←</button>
-          <button class="game-control" type="button" data-hold="down" aria-label="Gå framover i dybden">↓</button>
-          <button class="game-control" type="button" data-hold="right" aria-label="Gå til høyre">→</button>
-          <button class="game-control" type="button" data-action="punch">SLÅ</button>
-          <button class="game-control" type="button" data-action="kick">SPARK</button>
-          <button class="game-control" type="button" data-action="dash">DASH</button>
-          <button class="game-control" type="button" data-action="special">SPESIAL</button>
-          <button class="game-control" type="button" data-hold="block">HOLD / PARRY</button>
-        </div>
-        <p class="game-credit">Tobias står på bakken hele veien. Ingen fallkanter: bare snø, dybdebane, kombinasjoner og rotorhoder.</p>
-      </section>
-
-      <section class="section" id="overblikk">
-        <div class="section-heading">
-          <div><p class="section-kicker">BONUS / ØKONOMISJEF</p><h2>Hvem får toppjobben?</h2></div>
-          <p>Vitenskapelig metode: fullstendig useriøs. Velg Aron, og kurven forlater diagrammet.</p>
-        </div>
-        <div class="hero-panel" id="economy-chart" aria-label="Tøysete økonomisjef-simulator">
-          <div class="panel-top"><span>ØKONOMISJEF-SIMULATOR</span><span class="live">AVHENGER AV VALG</span></div>
-          <p class="chart-title">Hvem får toppjobben?</p>
-          <span class="chart-subtitle">Illustrasjon · ingen ekte regnskap</span>
-          <svg class="chart" viewBox="0 0 480 148" role="img" aria-label="Velg en kandidat for å se en tøysete graf">
-            <path class="chart-grid" d="M40 28H472M40 54H472M40 112H472M40 138H472"/>
-            <path class="chart-zero" d="M40 84H472"/>
-            <text class="axis-label" x="13" y="31">+</text><text class="axis-label" x="13" y="87">0</text><text class="axis-label" x="13" y="141">−</text>
-            <path class="chart-line line-start" pathLength="1" d="M42 101 C83 97 98 88 130 91 S180 78 214 76 S263 65 300 67 S350 50 382 51 S430 31 470 24"/>
-            <path class="chart-line line-aron" pathLength="1" d="M42 84 H308 C352 84 369 79 384 61 L398 31 L406 0"/>
-            <path class="chart-line line-other" pathLength="1" d="M42 84 H168 C216 84 240 92 273 104 S324 122 341 147 L350 166"/>
-            <text class="plot-note note-aron" x="330" y="18" fill="#8fe7a9">UT AV DIAGRAMMET ↑</text>
-            <text class="plot-note note-other" x="262" y="137" fill="#ffaaa0">BUDSJETTET: AU</text>
-          </svg>
-          <div class="choice-row" role="group" aria-label="Velg økonomisjef">
-            <button class="choice-button" type="button" data-choice-button="aron" aria-pressed="false">Velg Aron 🚀</button>
-            <button class="choice-button" type="button" data-choice-button="other" aria-pressed="false">Velg noen andre</button>
+          <div class="game-meta">
+            <div class="game-key-help"><span class="game-key">WASD</span> gå / dybde <span class="game-key">J</span> slag <span class="game-key">K</span> spark <span class="game-key">C</span> spesial <span class="game-key">SPACE</span> dash <span class="game-key">B</span> blokk / parry <span class="game-key">P</span> pause</div>
+            <div class="game-meta-stats"><span>LIV <strong id="player-lives">10 / 10</strong></span><span>KOMBO <strong id="combo-readout">—</strong></span><span>POENG <strong id="score-readout">0</strong></span><span id="boss-readout" hidden>ALETTE <strong>VENTER</strong></span><button type="button" id="sound-toggle" aria-pressed="true">LYD: PÅ</button></div>
           </div>
-          <p class="chart-result" id="chart-result" aria-live="polite">Velg kandidat og følg utviklingen.</p>
-        </div>
-        <div class="grid">
-          <section class="card"><p class="card-label">Fokus</p><h3>Økonomi med bakkekontakt</h3><p>Interesse for hvordan prioriteringer, budsjetter og gode beslutninger skaper verdi over tid.</p></section>
-          <section class="card"><p class="card-label">Styrearbeid</p><h3>Hytte styret</h3><p>Aron beskriver utviklingen under seg med egne ord: «det går jekla bra».</p></section>
-          <section class="card"><p class="card-label">Initiativ</p><h3>Katiba</h3><p>Aron beskriver også Katiba som et initiativ som går «jekla bra» under hans ledelse.</p></section>
-        </div>
-      </section>
-
-      <section class="section" id="erfaring" style="padding-top:0">
-        <div class="section-heading">
-          <div><p class="section-kicker">02 / Arbeidsmåte</p><h2>Stødig på tall.<br>Best med folk.</h2></div>
-        </div>
-        <div class="grid">
-          <section class="card"><p class="card-label">01 · Prioritering</p><h3>Se helheten</h3><p>Skille mellom det som haster og det som faktisk flytter prosjektet framover.</p></section>
-          <section class="card"><p class="card-label">02 · Ansvar</p><h3>Få ting til å skje</h3><p>Styrearbeid handler om oppfølging, samarbeid og å ta eierskap til resultatet.</p></section>
-          <section class="card"><p class="card-label">03 · Perspektiv</p><h3>Tall forteller noe</h3><p>Gode vurderinger trenger både oversikt, kontekst og en liten dose selvironi.</p></section>
+          <div class="touch-controls" aria-label="Berøringskontroller">
+            <button class="game-control" type="button" data-hold="up" aria-label="Gå bakover i dybden">↑ DYBDE</button>
+            <button class="game-control" type="button" data-hold="left" aria-label="Gå til venstre">←</button>
+            <button class="game-control" type="button" data-hold="down" aria-label="Gå framover i dybden">↓</button>
+            <button class="game-control" type="button" data-hold="right" aria-label="Gå til høyre">→</button>
+            <button class="game-control" type="button" data-action="punch">SLÅ</button>
+            <button class="game-control" type="button" data-action="kick">SPARK</button>
+            <button class="game-control" type="button" data-action="dash">DASH</button>
+            <button class="game-control" type="button" data-action="special">SPESIAL</button>
+            <button class="game-control" type="button" data-hold="block">HOLD / PARRY</button>
+          </div>
         </div>
       </section>
 
-      <section class="section" id="om" style="padding-top:0">
-        <div class="section-heading"><div><p class="section-kicker">03 / Om Aron</p><h2>Mennesket bak tallene.</h2></div></div>
-        <div class="about-grid">
-          <section class="about-card">
-            <div><p class="card-label">Markedsreaksjon</p><h3>Når «bruh» møter børsen.</h3><p>Den eneste grafen her som garantert går rett til topps: reaksjonen på å oppdage hva knappen faktisk gjorde.</p></div>
-            <img class="reaction" src="reaksjon.jpg" alt="Overrasket person med hendene på hodet, brukt som en humoristisk markedsreaksjon">
-          </section>
-          <section class="identity"><div><p class="card-label">Litt mer enn økonomi</p><h3>Jødisk tilhørighet</h3></div><p>En del av Arons identitet og bakgrunn. Plass til hele mennesket — også i en profesjonell profil.</p></section>
+      <section class="application" id="soknad" aria-labelledby="soknad-title">
+        <div class="application-inner">
+          <p class="application-label">Økonomi · ansvar · samarbeid</p>
+          <h2 id="soknad-title">Søknadstekst</h2>
+          <p>Jeg motiveres av økonomi, gode prioriteringer og samarbeid. Gjennom engasjement i Hytte styret og med Katiba har jeg fått erfaring med å ta ansvar, følge opp oppgaver og bidra til at ting går framover. Jeg ønsker å bruke denne erfaringen i en økonomirolle og fortsette å utvikle meg faglig.</p>
         </div>
       </section>
-
-      <footer class="footer"><span>© <span id="year"></span> Aron Süssmann · laget med glimt i øyet</span><span>Kun til presentasjon · ikke investeringsråd</span></footer>
     </article>
   </main>
   <script>
@@ -327,29 +155,10 @@
     document.getElementById('reveal-button').addEventListener('click', () => {
       reveal.hidden = true;
       portfolio.hidden = false;
-      document.getElementById('year').textContent = new Date().getFullYear();
       history.replaceState(null, '', location.pathname + location.search + '#portfolio');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }, { once: true });
-    const economyChart = document.getElementById('economy-chart');
-    const chartResult = document.getElementById('chart-result');
-    document.querySelectorAll('[data-choice-button]').forEach((button) => {
-      button.addEventListener('click', () => {
-        const choice = button.dataset.choiceButton;
-        economyChart.dataset.choice = choice;
-        document.querySelectorAll('[data-choice-button]').forEach((candidate) => {
-          candidate.setAttribute('aria-pressed', String(candidate === button));
-        });
-        economyChart.querySelector('.chart').setAttribute('aria-label', choice === 'aron'
-          ? 'Når Aron velges, skyter grafen rett opp og ut av diagrammet.'
-          : 'Når noen andre velges, stuper grafen under null.');
-        chartResult.textContent = choice === 'aron'
-          ? 'Aron valgt: kurven har forlatt både skjermen og regnearket.'
-          : 'Noen andre valgt: budsjettet har oppdaget minus-tegnet.';
-      });
-    });
   </script>
   <script src="game.js"></script>
 </body>
 </html>
-

@@ -12,6 +12,8 @@
     town: makeImage("kirkenes-snow.png"),
     tobias: makeImage("tobias-brawler.png"),
     rotor: makeImage("vindmolle-brawler.png"),
+    tobiasActions: makeImage("tobias-actions.png"),
+    rotorActions: makeImage("vindmolle-actions.png"),
     reindeer: makeImage("rein-npc.png")
   };
   const overlay = document.getElementById("game-overlay");
@@ -62,13 +64,17 @@
   function zToY(z) { return HORIZON + 18 + z * (H - HORIZON - 25); }
   function scaleAt(z) { return 0.70 + z * 0.48; }
   function screenX(worldX) { return worldX - cameraX; }
+  function drawActionFrame(image, row, column, width, height) {
+    const cellWidth = image.naturalWidth / 3, cellHeight = image.naturalHeight / 3;
+    ctx.drawImage(image, column * cellWidth, row * cellHeight, cellWidth, cellHeight, -width / 2, -height, width, height);
+  }
 
   function createEnemy(type, x, z) {
     const stats = enemyStats[type];
     return { type, x, z, hp: stats.hp, maxHp: stats.hp, speed: stats.speed, damage: stats.damage,
       scale: stats.scale, windup: stats.windup, range: stats.range, label: stats.label, reward: stats.score,
-      face: -1, mode: "idle", timer: 0, attackFlash: 0, hurt: 0, knockback: 0, dead: false,
-      removeTimer: 0, attackSerial: 0 };
+      face: -1, mode: "idle", timer: 0, attackWindup: stats.windup, attackFlash: 0, hurt: 0, knockback: 0, dead: false,
+      removeTimer: 0, attackSerial: 0, attackStyle: "punch", lastAttackStyle: "punch", attackPhaseTime: 0, step: 0 };
   }
   function spawnWave(number, firstX) {
     currentWave = number;
@@ -82,7 +88,7 @@
   function resetGame() {
     player = { x: 144, z: 0.56, face: 1, hp: 10, maxHp: 10, special: 20, attack: null, comboStage: 0,
       comboCount: 0, comboTimer: 0, invulnerable: 2.50, hurt: 0, stun: 0, dashTimer: 0, dashCooldown: 0,
-      parry: 0, blocking: false, blockWasDown: false, step: 0, attackFlash: 0 };
+      parry: 0, blocking: false, blockWasDown: false, step: 0, walkPulse: 0, attackFlash: 0 };
     enemies = []; particles = []; floaters = []; pickups = []; cameraX = 0; score = 0;
     currentWave = 1; allCleared = false; hitStop = 0; shake = 0; flash = 0; stageNotice = { text: "", timer: 0 };
     bufferedAttack = null; attackBufferTimer = 0;
@@ -208,6 +214,7 @@
     if (direction === "down") player.z += 0.016;
     player.x = Math.max(66, Math.min(gateX, player.x));
     player.z = Math.max(LOW_Z, Math.min(HIGH_Z, player.z));
+    player.step += 1.25; player.walkPulse = 0.22;
   }
   function spawnWaveAfterClear() {
     if (enemies.some((enemy) => !enemy.dead)) return;
@@ -281,6 +288,8 @@
     for (const enemy of enemies) {
       if (enemy.dead) { enemy.removeTimer -= dt; continue; }
       enemy.hurt = Math.max(0, enemy.hurt - dt); enemy.attackFlash = Math.max(0, enemy.attackFlash - dt);
+      enemy.attackPhaseTime = enemy.mode === "tell" || enemy.mode === "recover" ? enemy.attackPhaseTime + dt : 0;
+      if (enemy.mode === "approach") enemy.step += dt * 11;
       const dx = player.x - enemy.x, dz = player.z - enemy.z, distance = Math.abs(dx);
       enemy.face = dx < 0 ? -1 : 1;
       if (enemy.mode === "stun") {
@@ -295,6 +304,7 @@
           const inRange = distance <= enemy.range * scaleAt(enemy.z) && Math.abs(dz) <= (enemy.type === "boss" ? 0.25 : 0.18);
           if (inRange) receiveEnemyHit(enemy, enemy.damage);
           enemy.mode = "recover"; enemy.timer = enemy.type === "boss" ? (enemy.hp < enemy.maxHp * 0.48 ? 0.70 : 1.12) : 0.96;
+          enemy.lastAttackStyle = enemy.attackStyle; enemy.attackPhaseTime = 0;
           enemy.attackSerial += 1;
         }
         continue;
@@ -303,7 +313,10 @@
       const engageDistance = enemy.range * scaleAt(enemy.z) * 0.82;
       if (distance < engageDistance && Math.abs(dz) < 0.19) {
         enemy.mode = "tell";
-        enemy.timer = enemy.type === "boss" && enemy.hp < enemy.maxHp * 0.48 ? 0.58 : enemy.windup;
+        enemy.attackStyle = enemy.attackSerial % 2 === 0 ? "punch" : "kick";
+        enemy.attackPhaseTime = 0;
+        enemy.attackWindup = enemy.type === "boss" && enemy.hp < enemy.maxHp * 0.48 ? 0.58 : enemy.windup;
+        enemy.timer = enemy.attackWindup;
         enemy.attackFlash = enemy.timer; continue;
       }
       enemy.mode = "approach";
@@ -334,6 +347,7 @@
     flash = Math.max(0, flash - dt * 1.9); shake = Math.max(0, shake - dt * 16);
     player.invulnerable = Math.max(0, player.invulnerable - dt); player.hurt = Math.max(0, player.hurt - dt);
     player.stun = Math.max(0, player.stun - dt); player.dashTimer = Math.max(0, player.dashTimer - dt);
+    player.walkPulse = Math.max(0, player.walkPulse - dt);
     player.dashCooldown = Math.max(0, player.dashCooldown - dt); player.parry = Math.max(0, player.parry - dt);
     player.attackFlash = Math.max(0, player.attackFlash - dt); player.comboTimer = Math.max(0, player.comboTimer - dt);
     attackBufferTimer = Math.max(0, attackBufferTimer - dt);
@@ -472,7 +486,7 @@
     if (enemy.dead && enemy.removeTimer <= 0) return;
     const x = screenX(enemy.x), foot = zToY(enemy.z), s = scaleAt(enemy.z) * enemy.scale;
     const h = (enemy.type === "boss" ? 196 : 174) * s, w = h * 0.835;
-    const bob = enemy.mode === "approach" ? Math.sin(gameTime * 11 + enemy.x) * 2 * s : 0;
+    const bob = enemy.mode === "approach" ? Math.abs(Math.sin(enemy.step)) * 2.2 * s : 0;
     const tellShake = enemy.mode === "tell" ? Math.sin(gameTime * 42) * 2.8 * s : 0;
     const fall = enemy.dead ? (1 - Math.max(0, enemy.removeTimer) / (enemy.type === "boss" ? 1.3 : 0.84)) : 0;
     ctx.save(); ctx.globalAlpha = enemy.dead ? Math.max(0, 1 - fall * 1.15) : 1;
@@ -482,7 +496,19 @@
       ctx.fillStyle = "#ff775c"; ctx.font = "900 " + Math.round(15 * s) + "px ui-monospace, monospace"; ctx.textAlign = "center"; ctx.fillText("!", 0, -h - 8 * s);
     }
     if (enemy.hurt > 0 && Math.floor(gameTime * 32) % 2 === 0) ctx.globalAlpha *= 0.42;
-    if (art.rotor.complete && art.rotor.naturalWidth) ctx.drawImage(art.rotor, -w / 2, -h, w, h);
+    if (art.rotorActions.complete && art.rotorActions.naturalWidth) {
+      let row = 0, column = 0;
+      if (enemy.mode === "tell") {
+        row = enemy.attackStyle === "kick" ? 2 : 1;
+        column = enemy.attackPhaseTime > enemy.attackWindup * 0.68 ? 1 : 0;
+      } else if (enemy.mode === "recover") {
+        row = enemy.lastAttackStyle === "kick" ? 2 : 1;
+        column = enemy.attackPhaseTime < 0.16 ? 1 : 2;
+      } else if (!enemy.dead && enemy.mode === "approach") {
+        column = 1 + (Math.floor(enemy.step / Math.PI) % 2);
+      }
+      drawActionFrame(art.rotorActions, row, column, h * 1.04, h);
+    } else if (art.rotor.complete && art.rotor.naturalWidth) ctx.drawImage(art.rotor, -w / 2, -h, w, h);
     else {
       ctx.fillStyle = "#086174"; ctx.fillRect(-w * 0.33, -h * 0.74, w * 0.66, h * 0.48);
       ctx.fillStyle = "#eeeeec"; ctx.fillRect(-w * 0.15, -h * 0.98, w * 0.30, h * 0.27); ctx.fillRect(-w * 0.045, -h * 1.2, w * 0.09, h * 0.19);
@@ -497,16 +523,22 @@
     ctx.restore();
   }
   function drawPlayer() {
-    const foot = zToY(player.z), s = scaleAt(player.z), h = 190 * s;
+    const foot = zToY(player.z), s = scaleAt(player.z), h = 214 * s;
     const w = h * (art.tobias.naturalWidth ? art.tobias.naturalWidth / art.tobias.naturalHeight : 0.835);
-    const walking = held.left || held.right || held.up || held.down, bob = walking ? Math.sin(player.step) * 2.4 * s : Math.sin(gameTime * 2.2) * 1.1 * s;
+    const walking = held.left || held.right || held.up || held.down || player.walkPulse > 0;
+    const bob = walking ? Math.abs(Math.sin(player.step)) * 2.3 * s : Math.sin(gameTime * 2.2) * 1.1 * s;
     const attack = player.attack, isActive = attackIsActive(attack);
-    let lean = 0;
-    if (attack && attack.time < attack.duration) lean = Math.sin(attack.time / attack.duration * Math.PI) * (attack.kind === "kick" ? 11 : attack.kind === "special" ? 5 : 8) * s;
+    let lean = 0, row = 0, column = 0;
+    if (attack && attack.time < attack.duration && (attack.kind === "punch" || attack.kind === "kick")) {
+      row = attack.kind === "kick" ? 2 : 1;
+      column = attack.time < attack.windup ? 0 : attack.time <= attack.activeEnd ? 1 : 2;
+      lean = attack.kind === "kick" ? 3 * s : 5 * s;
+    } else if (walking) column = 1 + (Math.floor(player.step / Math.PI) % 2);
     if (player.dashTimer > 0) lean += 12 * s;
     const flashing = player.invulnerable > 0 && Math.floor(gameTime * 30) % 2 === 0;
     ctx.save(); ctx.globalAlpha = flashing ? 0.53 : 1; ctx.translate(screenX(player.x), foot + bob); ctx.scale(player.face < 0 ? -1 : 1, 1);
-    if (art.tobias.complete && art.tobias.naturalWidth) ctx.drawImage(art.tobias, -w / 2 + lean, -h, w, h);
+    if (art.tobiasActions.complete && art.tobiasActions.naturalWidth) drawActionFrame(art.tobiasActions, row, column, h * 1.12, h);
+    else if (art.tobias.complete && art.tobias.naturalWidth) ctx.drawImage(art.tobias, -w / 2 + lean, -h, w, h);
     else {
       ctx.fillStyle = "#e8b900"; ctx.fillRect(-w * 0.30 + lean, -h * 0.76, w * 0.62, h * 0.42);
       ctx.fillStyle = "#34221d"; ctx.fillRect(-w * 0.20 + lean, -h, w * 0.42, h * 0.24);
@@ -515,8 +547,11 @@
     ctx.restore();
     ctx.save(); ctx.globalAlpha = flashing ? 0.58 : 1; ctx.textAlign = "center";
     ctx.font = "900 " + Math.max(8, Math.round(10 * s)) + "px ui-monospace, monospace"; ctx.lineWidth = 2 * s; ctx.strokeStyle = "#59431a"; ctx.fillStyle = "#fff8d6";
-    ctx.strokeText("UKA", screenX(player.x) + lean * player.face, foot - h * 0.535);
-    ctx.fillText("UKA", screenX(player.x) + lean * player.face, foot - h * 0.535); ctx.restore();
+    const kickShift = row === 2 ? (column === 1 ? 0.28 : column === 2 ? 0.13 : 0) : 0;
+    const shirtX = screenX(player.x) + lean * player.face - player.face * h * kickShift;
+    const shirtY = foot - h * (row === 2 && column === 1 ? 0.615 : row === 2 && column === 2 ? 0.57 : 0.535);
+    ctx.strokeText("UKA", shirtX, shirtY);
+    ctx.fillText("UKA", shirtX, shirtY); ctx.restore();
     if (isActive && attack) drawAttackArc(attack, foot, s);
     if (player.blocking) {
       ctx.strokeStyle = player.parry > 0 ? "rgba(255,240,135,.94)" : "rgba(153,213,255,.78)"; ctx.lineWidth = player.parry > 0 ? 3 : 2;
